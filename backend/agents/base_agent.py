@@ -1,0 +1,91 @@
+from abc import ABC, abstractmethod
+from typing import List, Dict, Any, Optional
+from groq import Groq
+from config import settings
+from database import get_database
+from datetime import datetime, timezone
+import logging
+import json
+
+logger = logging.getLogger(__name__)
+
+
+class BaseAgent(ABC):
+    """Base class for all agents following Parlant.io-like architecture"""
+    
+    def __init__(self, name: str, model: str = "llama-3.3-70b-versatile"):
+        self.name = name
+        self.model = model
+        self.client = Groq(api_key=settings.GROQ_API_KEY)
+        self.context_history: List[Dict[str, Any]] = []
+        self.max_context_messages = 10
+        self.max_retries = 3
+    
+    async def save_context(self, db=None):
+        """Save agent context to database"""
+        if db is None:
+            db = get_database()
+        
+        context_doc = {
+            "agent_name": self.name,
+            "conversation_history": self.context_history,
+            "metadata": {"model": self.model},
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.agent_contexts.update_one(
+            {"agent_name": self.name},
+            {"$set": context_doc},
+            upsert=True
+        )
+    
+    async def load_context(self, db=None):
+        """Load agent context from database"""
+        if db is None:
+            db = get_database()
+        
+        context_doc = await db.agent_contexts.find_one({"agent_name": self.name}, {"_id": 0})
+        if context_doc:
+            self.context_history = context_doc.get("conversation_history", [])
+    
+    def add_to_context(self, role: str, content: str):
+        """Add message to context history with token management"""
+        self.context_history.append({"role": role, "content": content})
+        
+        # Keep only last N messages to manage token limits
+        if len(self.context_history) > self.max_context_messages:
+            # Keep system message if exists, and last N messages
+            system_msgs = [msg for msg in self.context_history if msg["role"] == "system"]
+            other_msgs = [msg for msg in self.context_history if msg["role"] != "system"]
+            self.context_history = system_msgs + other_msgs[-self.max_context_messages:]
+    
+    async def call_llm(self, messages: List[Dict[str, str]], temperature: float = 0.7) -> str:
+        """Call LLM with retry logic and error handling"""
+        for attempt in range(self.max_retries):
+            try:
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=2000
+                )
+                return response.choices[0].message.content
+            except Exception as e:
+                logger.error(f"LLM call failed (attempt {attempt + 1}/{self.max_retries}): {str(e)}")
+                if attempt == self.max_retries - 1:
+                    raise
+                # Wait before retry
+                import asyncio
+                await asyncio.sleep(2 ** attempt)
+        
+        raise Exception("LLM call failed after all retries")
+    
+    @abstractmethod
+    async def process(self, input_data: Any) -> Any:
+        """Process input data - to be implemented by subclasses"""
+        pass
+    
+    def clear_context(self):
+        """Clear context history"""
+        self.context_history = []
