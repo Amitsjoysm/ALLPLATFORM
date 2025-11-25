@@ -1,7 +1,11 @@
 from celery_app import celery_app
 from motor.motor_asyncio import AsyncIOMotorClient
 from config import settings
-from scrapers import RedditScraper, HackerNewsScraper, ProductHuntScraper, GoogleTrendsScraper, ExaResearchScraper
+from scrapers import (
+    RedditScraper, HackerNewsScraper, ProductHuntScraper, GoogleTrendsScraper, 
+    ExaResearchScraper, QuoraScraper, TwitterScraper, LinkedInScraper, 
+    YouTubeScraper, CompetitorScraper, FacebookScraper
+)
 from agents import OrchestratorAgent
 from models import RawSignal, Opportunity, OpportunityStatus, Recommendation
 import logging
