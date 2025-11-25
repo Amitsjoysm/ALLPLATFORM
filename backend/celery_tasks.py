@@ -70,6 +70,18 @@ async def async_run_hourly_scan():
                     scraper = GoogleTrendsScraper(channel_id, config.get("topics", ["email verification"]))
                 elif channel_type == "exa":
                     scraper = ExaResearchScraper(channel_id, config.get("topics", ["email verification"]))
+                elif channel_type == "quora":
+                    scraper = QuoraScraper(channel_id, config.get("keywords", settings.QUORA_KEYWORDS))
+                elif channel_type == "twitter":
+                    scraper = TwitterScraper(channel_id, config.get("keywords", settings.REDDIT_KEYWORDS[:5]))
+                elif channel_type == "linkedin":
+                    scraper = LinkedInScraper(channel_id, config.get("keywords", settings.REDDIT_KEYWORDS[:4]))
+                elif channel_type == "youtube":
+                    scraper = YouTubeScraper(channel_id, config.get("keywords", settings.REDDIT_KEYWORDS[:3]))
+                elif channel_type == "competitor":
+                    scraper = CompetitorScraper(channel_id, config.get("competitors", settings.COMPETITORS))
+                elif channel_type == "facebook":
+                    scraper = FacebookScraper(channel_id, config.get("keywords", settings.REDDIT_KEYWORDS[:4]))
                 
                 if scraper:
                     signals = await scraper.run()
