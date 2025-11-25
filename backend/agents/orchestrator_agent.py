@@ -20,6 +20,34 @@ class OrchestratorAgent(BaseAgent):
         # Platform-specific agents - lazy initialization
         self._platform_agents = {}
     
+    def _get_platform_agent(self, platform: str):
+        """Get or create platform-specific agent"""
+        if platform not in self._platform_agents:
+            # Lazy load to avoid circular imports
+            if platform == "reddit":
+                from agents.reddit_agent import RedditAgent
+                self._platform_agents[platform] = RedditAgent()
+            elif platform == "quora":
+                from agents.quora_agent import QuoraAgent
+                self._platform_agents[platform] = QuoraAgent()
+            elif platform == "twitter":
+                from agents.twitter_agent import TwitterAgent
+                self._platform_agents[platform] = TwitterAgent()
+            elif platform == "linkedin":
+                from agents.linkedin_agent import LinkedInAgent
+                self._platform_agents[platform] = LinkedInAgent()
+            elif platform == "youtube":
+                from agents.youtube_agent import YouTubeAgent
+                self._platform_agents[platform] = YouTubeAgent()
+            elif platform == "competitor":
+                from agents.competitor_agent import CompetitorAgent
+                self._platform_agents[platform] = CompetitorAgent()
+            else:
+                # Use generic classifier for unknown platforms
+                return self.classifier
+        
+        return self._platform_agents[platform]
+    
     async def assign_task(self, task_id: str, task_type: str, task_data: Dict[str, Any]):
         """Assign task to appropriate agent"""
         self.active_tasks[task_id] = {
@@ -33,7 +61,14 @@ class OrchestratorAgent(BaseAgent):
     
     async def check_task_completion(self, task_id: str) -> Dict[str, Any]:
         """Check if task is completed"""
-        return self.active_tasks.get(task_id, {"status": "not_found"})
+        task = self.active_tasks.get(task_id, {"status": "not_found"})
+        
+        # Clean up completed tasks older than 1 hour
+        if task.get("status") in ["completed", "failed"]:
+            # Could implement cleanup logic here
+            pass
+        
+        return task
     
     async def process_signal_pipeline(self, signal_data: Dict[str, Any]) -> Dict[str, Any]:
         """Complete pipeline: classify signal -> generate content -> return opportunity"""
