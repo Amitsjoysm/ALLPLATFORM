@@ -73,9 +73,15 @@ class OrchestratorAgent(BaseAgent):
     async def process_signal_pipeline(self, signal_data: Dict[str, Any]) -> Dict[str, Any]:
         """Complete pipeline: classify signal -> generate content -> return opportunity"""
         try:
-            # Step 1: Classify signal
-            logger.info(f"Orchestrator: Classifying signal {signal_data.get('id', 'unknown')}")
-            classification = await self.classifier.process(signal_data)
+            # Determine platform from signal metadata
+            meta = signal_data.get("meta", {})
+            platform = meta.get("platform", "").lower()
+            
+            # Step 1: Use platform-specific agent for classification
+            logger.info(f"Orchestrator: Classifying signal {signal_data.get('id', 'unknown')} from platform: {platform}")
+            
+            agent = self._get_platform_agent(platform) if platform else self.classifier
+            classification = await agent.process(signal_data)
             
             # Check if relevant
             if not classification.get("is_relevant", False):
