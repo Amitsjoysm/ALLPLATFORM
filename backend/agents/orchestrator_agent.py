@@ -16,6 +16,9 @@ class OrchestratorAgent(BaseAgent):
         self.classifier = ClassifierAgent()
         self.content_generator = ContentGeneratorAgent()
         self.active_tasks: Dict[str, Dict[str, Any]] = {}
+        
+        # Platform-specific agents - lazy initialization
+        self._platform_agents = {}
     
     async def assign_task(self, task_id: str, task_type: str, task_data: Dict[str, Any]):
         """Assign task to appropriate agent"""
