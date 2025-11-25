@@ -1,6 +1,7 @@
 from agents.base_agent import BaseAgent
 from agents.classifier_agent import ClassifierAgent
 from agents.content_generator_agent import ContentGeneratorAgent
+from agents.traffic_rules_engine import TrafficRulesEngine
 from typing import Dict, Any, List
 import logging
 import asyncio
@@ -15,6 +16,7 @@ class OrchestratorAgent(BaseAgent):
         super().__init__(name="OrchestratorAgent", model="llama-3.3-70b-versatile")
         self.classifier = ClassifierAgent()
         self.content_generator = ContentGeneratorAgent()
+        self.rules_engine = TrafficRulesEngine()
         self.active_tasks: Dict[str, Dict[str, Any]] = {}
         
         # Platform-specific agents - lazy initialization
