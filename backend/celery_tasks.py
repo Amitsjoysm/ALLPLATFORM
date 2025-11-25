@@ -41,6 +41,12 @@ async def async_run_hourly_scan():
                 {"id": str(uuid.uuid4()), "name": "ProductHunt", "type": "product_hunt", "config": {}, "is_active": True},
                 {"id": str(uuid.uuid4()), "name": "GoogleTrends", "type": "google_trends", "config": {"topics": ["email verification", "b2b leads"]}, "is_active": True},
                 {"id": str(uuid.uuid4()), "name": "ExaResearch", "type": "exa", "config": {"topics": ["email verification tools", "B2B lead generation 2025"]}, "is_active": True},
+                {"id": str(uuid.uuid4()), "name": "Quora", "type": "quora", "config": {"keywords": settings.QUORA_KEYWORDS}, "is_active": True},
+                {"id": str(uuid.uuid4()), "name": "Twitter", "type": "twitter", "config": {"keywords": settings.REDDIT_KEYWORDS[:5]}, "is_active": True},
+                {"id": str(uuid.uuid4()), "name": "LinkedIn", "type": "linkedin", "config": {"keywords": settings.REDDIT_KEYWORDS[:4]}, "is_active": True},
+                {"id": str(uuid.uuid4()), "name": "YouTube", "type": "youtube", "config": {"keywords": settings.REDDIT_KEYWORDS[:3]}, "is_active": True},
+                {"id": str(uuid.uuid4()), "name": "Competitor Monitor", "type": "competitor", "config": {"competitors": settings.COMPETITORS}, "is_active": True},
+                {"id": str(uuid.uuid4()), "name": "Facebook", "type": "facebook", "config": {"keywords": settings.REDDIT_KEYWORDS[:4]}, "is_active": True},
             ]
             await db.channels.insert_many(default_channels)
             channel_configs = default_channels
