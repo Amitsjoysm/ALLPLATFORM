@@ -43,7 +43,7 @@ def decode_token(token: str) -> dict:
         )
 
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), db: AsyncIOMotorDatabase = None) -> User:
+async def get_current_user_dependency(credentials: HTTPAuthorizationCredentials = Depends(security), db = Depends(lambda: __import__('database').get_database())) -> User:
     token = credentials.credentials
     payload = decode_token(token)
     user_id: str = payload.get("sub")
@@ -63,9 +63,13 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     return User(**user_doc)
 
 
+def get_current_user():
+    return get_current_user_dependency
+
+
 def require_role(required_roles: list[UserRole]):
-    async def role_checker(credentials: HTTPAuthorizationCredentials = Depends(security), db: AsyncIOMotorDatabase = None) -> User:
-        user = await get_current_user(credentials, db)
+    async def role_checker(credentials: HTTPAuthorizationCredentials = Depends(security), db = Depends(lambda: __import__('database').get_database())) -> User:
+        user = await get_current_user_dependency(credentials, db)
         if user.role not in required_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
