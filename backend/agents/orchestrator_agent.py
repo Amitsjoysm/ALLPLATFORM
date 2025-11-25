@@ -119,11 +119,17 @@ class OrchestratorAgent(BaseAgent):
                 "content_template": content_template,
                 "meta": {
                     "key_topics": classification.get("key_topics", []),
-                    "reasoning": classification.get("reasoning", "")
+                    "reasoning": classification.get("reasoning", ""),
+                    "platform": classification.get("platform", platform),
+                    "competitor_name": classification.get("competitor_name"),
+                    "urgency": classification.get("urgency")
                 }
             }
             
-            logger.info(f"Orchestrator: Opportunity created with score {score}")
+            # Apply traffic business logic rules
+            opportunity = self.rules_engine.apply_rules(opportunity)
+            
+            logger.info(f"Orchestrator: Opportunity created with score {score}, priority: {opportunity.get('priority', 'medium')}")
             return {"status": "success", "opportunity": opportunity}
             
         except Exception as e:
