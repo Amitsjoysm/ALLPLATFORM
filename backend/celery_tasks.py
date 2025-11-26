@@ -181,10 +181,10 @@ async def create_user_recommendations(db, opportunities: list):
                 if enabled_types and opp["type"] not in enabled_types:
                     continue
                 
-                # Check keywords if user has specified them
-                if target_keywords:
+                # Check keywords if user has specified them (includes extracted keywords)
+                if all_keywords:
                     content = opp.get("suggested_action", "").lower()
-                    if not any(keyword.lower() in content for keyword in target_keywords):
+                    if not any(keyword.lower() in content for keyword in all_keywords):
                         continue
                 
                 # Check exclude keywords
