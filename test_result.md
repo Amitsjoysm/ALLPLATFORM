@@ -486,11 +486,10 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Smart Keyword Discovery - URL Extraction Service"
-    - "Smart Keyword Discovery - API Endpoints"
-    - "Smart Keyword Discovery - Models Update"
-    - "Smart Keyword Discovery - Celery Integration"
-    - "Smart Keyword Discovery Component - Frontend"
+    - "Lead Identification System - Backend"
+    - "RapidAPI Integration - Correct Endpoints"
+    - "Product Profile Section - Settings Frontend"
+    - "Leads Navigation Links"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
