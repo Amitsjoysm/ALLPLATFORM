@@ -222,25 +222,40 @@ Provide JSON response with lead qualification analysis. Set lead_source to "comm
             logger.error(f"Error analyzing comment: {e}")
             return None
     
-    async def analyze_post_comments(
+    async def analyze_post_and_comments(
         self,
         post_data: Dict[str, Any],
         comments: List[Dict[str, Any]],
-        user_keywords: List[str]
+        product_profile: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
         """
-        Analyze all comments on a post to identify leads
+        Analyze post author AND comments to identify leads
         
         Args:
-            post_data: Post information
+            post_data: Post information including author
             comments: List of comments on the post
-            user_keywords: User's product keywords
+            product_profile: User's product profile
         
         Returns:
-            List of qualified leads
+            List of qualified leads (from both post author and comments)
         """
         qualified_leads = []
         
+        post_url = post_data.get("url", "")
+        post_content = post_data.get("content", "")
+        
+        # 1. Analyze post author as potential lead
+        try:
+            author_lead = await self.analyze_post_author(post_data, product_profile)
+            if author_lead:
+                author_lead["post_url"] = post_url
+                author_lead["post_content"] = post_content[:500]
+                qualified_leads.append(author_lead)
+                logger.info(f"Qualified lead from post author: {author_lead.get('author_name')}")
+        except Exception as e:
+            logger.error(f"Error analyzing post author: {e}")
+        
+        # 2. Analyze comments for leads
         if not comments:
             return qualified_leads
         
@@ -248,8 +263,8 @@ Provide JSON response with lead qualification analysis. Set lead_source to "comm
         
         post_context = {
             "title": post_data.get("title", ""),
-            "content": post_data.get("content", ""),
-            "url": post_data.get("url", "")
+            "content": post_content,
+            "url": post_url
         }
         
         for comment in comments:
@@ -257,20 +272,20 @@ Provide JSON response with lead qualification analysis. Set lead_source to "comm
                 lead_analysis = await self.analyze_comment(
                     comment,
                     post_context,
-                    user_keywords
+                    product_profile
                 )
                 
                 if lead_analysis:
                     # Add post context to lead
-                    lead_analysis["post_url"] = post_context["url"]
-                    lead_analysis["post_content"] = post_context["content"][:500]
+                    lead_analysis["post_url"] = post_url
+                    lead_analysis["post_content"] = post_content[:500]
                     qualified_leads.append(lead_analysis)
                     
             except Exception as e:
                 logger.error(f"Error processing comment: {e}")
                 continue
         
-        logger.info(f"Found {len(qualified_leads)} qualified leads from {len(comments)} comments")
+        logger.info(f"Found {len(qualified_leads)} qualified leads from post and comments")
         return qualified_leads
     
     async def batch_analyze_posts(
