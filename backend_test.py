@@ -580,6 +580,283 @@ class TrafficEngineAPITester:
             self.log(f"❌ API token revocation failed: {result}", "ERROR")
             return False
 
+    # ============= SMART KEYWORD DISCOVERY TESTS =============
+
+    def test_extract_keywords_apollo(self) -> bool:
+        """Test keyword extraction from apollo.io"""
+        self.log("Testing keyword extraction from apollo.io...")
+        
+        if not self.user_token:
+            self.log("❌ No user token available for keyword extraction test", "ERROR")
+            return False
+            
+        test_data = {"url": "https://www.apollo.io"}
+        result = self.make_request("POST", "/extract-keywords", token=self.user_token, data=test_data)
+        
+        if result["success"] and result["data"].get("keywords"):
+            keywords = result["data"]["keywords"]
+            industry = result["data"].get("industry", "")
+            niche = result["data"].get("niche", "")
+            business_type = result["data"].get("business_type", "")
+            
+            self.log(f"✅ Keywords extracted from apollo.io: {len(keywords)} keywords")
+            self.log(f"   Industry: {industry}")
+            self.log(f"   Niche: {niche}")
+            self.log(f"   Business Type: {business_type}")
+            self.log(f"   Sample keywords: {keywords[:5]}")
+            
+            # Store for save test
+            self.extracted_keywords = keywords
+            self.extracted_url = "https://www.apollo.io"
+            self.extracted_metadata = {
+                "industry": industry,
+                "niche": niche,
+                "business_type": business_type
+            }
+            return True
+        else:
+            self.log(f"❌ Keyword extraction from apollo.io failed: {result}", "ERROR")
+            return False
+
+    def test_extract_keywords_hunter(self) -> bool:
+        """Test keyword extraction from hunter.io"""
+        self.log("Testing keyword extraction from hunter.io...")
+        
+        if not self.user_token:
+            self.log("❌ No user token available for keyword extraction test", "ERROR")
+            return False
+            
+        test_data = {"url": "https://www.hunter.io"}
+        result = self.make_request("POST", "/extract-keywords", token=self.user_token, data=test_data)
+        
+        if result["success"] and result["data"].get("keywords"):
+            keywords = result["data"]["keywords"]
+            industry = result["data"].get("industry", "")
+            niche = result["data"].get("niche", "")
+            
+            self.log(f"✅ Keywords extracted from hunter.io: {len(keywords)} keywords")
+            self.log(f"   Industry: {industry}")
+            self.log(f"   Niche: {niche}")
+            self.log(f"   Sample keywords: {keywords[:5]}")
+            return True
+        else:
+            self.log(f"❌ Keyword extraction from hunter.io failed: {result}", "ERROR")
+            return False
+
+    def test_extract_keywords_clearbit(self) -> bool:
+        """Test keyword extraction from clearbit.com"""
+        self.log("Testing keyword extraction from clearbit.com...")
+        
+        if not self.user_token:
+            self.log("❌ No user token available for keyword extraction test", "ERROR")
+            return False
+            
+        test_data = {"url": "https://clearbit.com"}
+        result = self.make_request("POST", "/extract-keywords", token=self.user_token, data=test_data)
+        
+        if result["success"] and result["data"].get("keywords"):
+            keywords = result["data"]["keywords"]
+            industry = result["data"].get("industry", "")
+            niche = result["data"].get("niche", "")
+            
+            self.log(f"✅ Keywords extracted from clearbit.com: {len(keywords)} keywords")
+            self.log(f"   Industry: {industry}")
+            self.log(f"   Niche: {niche}")
+            self.log(f"   Sample keywords: {keywords[:5]}")
+            return True
+        else:
+            self.log(f"❌ Keyword extraction from clearbit.com failed: {result}", "ERROR")
+            return False
+
+    def test_extract_keywords_invalid_url(self) -> bool:
+        """Test keyword extraction with invalid URL"""
+        self.log("Testing keyword extraction with invalid URL...")
+        
+        if not self.user_token:
+            self.log("❌ No user token available for invalid URL test", "ERROR")
+            return False
+            
+        test_data = {"url": "invalid-url-test"}
+        result = self.make_request("POST", "/extract-keywords", token=self.user_token, data=test_data)
+        
+        if not result["success"] and result["status_code"] in [400, 500]:
+            self.log("✅ Invalid URL properly rejected")
+            return True
+        else:
+            self.log(f"❌ Invalid URL not properly handled: {result}", "ERROR")
+            return False
+
+    def test_analyze_seo_apollo(self) -> bool:
+        """Test SEO analysis of apollo.io"""
+        self.log("Testing SEO analysis of apollo.io...")
+        
+        if not self.user_token:
+            self.log("❌ No user token available for SEO analysis test", "ERROR")
+            return False
+            
+        test_data = {"url": "https://www.apollo.io"}
+        result = self.make_request("POST", "/analyze-seo", token=self.user_token, data=test_data)
+        
+        if result["success"] and "seo_score" in result["data"]:
+            seo_data = result["data"]
+            seo_score = seo_data.get("seo_score", 0)
+            issues = seo_data.get("issues", [])
+            warnings = seo_data.get("warnings", [])
+            good_practices = seo_data.get("good_practices", [])
+            keyword_opportunities = seo_data.get("keyword_opportunities", [])
+            content_suggestions = seo_data.get("content_suggestions", [])
+            traffic_strategies = seo_data.get("traffic_strategies", [])
+            
+            self.log(f"✅ SEO analysis completed for apollo.io")
+            self.log(f"   SEO Score: {seo_score}/100")
+            self.log(f"   Issues: {len(issues)}")
+            self.log(f"   Warnings: {len(warnings)}")
+            self.log(f"   Good Practices: {len(good_practices)}")
+            self.log(f"   Keyword Opportunities: {len(keyword_opportunities)}")
+            self.log(f"   Content Suggestions: {len(content_suggestions)}")
+            self.log(f"   Traffic Strategies: {len(traffic_strategies)}")
+            
+            if seo_score > 0:
+                self.log("✅ SEO score calculated successfully")
+            else:
+                self.log("⚠️ SEO score is 0, may indicate calculation issue")
+                
+            return True
+        else:
+            self.log(f"❌ SEO analysis of apollo.io failed: {result}", "ERROR")
+            return False
+
+    def test_analyze_seo_clearbit(self) -> bool:
+        """Test SEO analysis of clearbit.com"""
+        self.log("Testing SEO analysis of clearbit.com...")
+        
+        if not self.user_token:
+            self.log("❌ No user token available for SEO analysis test", "ERROR")
+            return False
+            
+        test_data = {"url": "https://clearbit.com"}
+        result = self.make_request("POST", "/analyze-seo", token=self.user_token, data=test_data)
+        
+        if result["success"] and "seo_score" in result["data"]:
+            seo_data = result["data"]
+            seo_score = seo_data.get("seo_score", 0)
+            issues = seo_data.get("issues", [])
+            warnings = seo_data.get("warnings", [])
+            
+            self.log(f"✅ SEO analysis completed for clearbit.com")
+            self.log(f"   SEO Score: {seo_score}/100")
+            self.log(f"   Issues: {len(issues)}")
+            self.log(f"   Warnings: {len(warnings)}")
+            return True
+        else:
+            self.log(f"❌ SEO analysis of clearbit.com failed: {result}", "ERROR")
+            return False
+
+    def test_save_extracted_keywords(self) -> bool:
+        """Test saving extracted keywords to user preferences"""
+        self.log("Testing saving extracted keywords...")
+        
+        if not self.user_token:
+            self.log("❌ No user token available for save keywords test", "ERROR")
+            return False
+            
+        if not hasattr(self, 'extracted_keywords'):
+            self.log("❌ No extracted keywords available for save test", "ERROR")
+            return False
+            
+        save_data = {
+            "keywords": self.extracted_keywords[:10],  # Save first 10 keywords
+            "url": self.extracted_url,
+            "metadata": self.extracted_metadata
+        }
+        
+        result = self.make_request("POST", "/save-extracted-keywords", token=self.user_token, data=save_data)
+        
+        if result["success"] and result["data"].get("total_keywords"):
+            total_keywords = result["data"]["total_keywords"]
+            message = result["data"].get("message", "")
+            
+            self.log(f"✅ Keywords saved successfully")
+            self.log(f"   Message: {message}")
+            self.log(f"   Total keywords in preferences: {total_keywords}")
+            return True
+        else:
+            self.log(f"❌ Saving extracted keywords failed: {result}", "ERROR")
+            return False
+
+    def test_preferences_with_extracted_keywords(self) -> bool:
+        """Test that preferences contain extracted keywords"""
+        self.log("Testing preferences contain extracted keywords...")
+        
+        if not self.user_token:
+            self.log("❌ No user token available for preferences test", "ERROR")
+            return False
+            
+        result = self.make_request("GET", "/preferences", token=self.user_token)
+        
+        if result["success"] and result["data"].get("user_id"):
+            prefs = result["data"]
+            extracted_keywords = prefs.get("extracted_keywords", [])
+            target_keywords = prefs.get("target_keywords", [])
+            analyzed_urls = prefs.get("analyzed_urls", [])
+            
+            self.log(f"✅ Preferences retrieved with keyword data")
+            self.log(f"   Extracted keywords: {len(extracted_keywords)}")
+            self.log(f"   Target keywords: {len(target_keywords)}")
+            self.log(f"   Analyzed URLs: {len(analyzed_urls)}")
+            
+            # Check if our saved keywords are present
+            if hasattr(self, 'extracted_keywords'):
+                saved_keywords = self.extracted_keywords[:10]
+                found_keywords = [kw for kw in saved_keywords if kw in target_keywords]
+                self.log(f"   Keywords found in preferences: {len(found_keywords)}/{len(saved_keywords)}")
+                
+                if len(found_keywords) > 0:
+                    self.log("✅ Extracted keywords successfully merged into preferences")
+                else:
+                    self.log("⚠️ Extracted keywords not found in preferences")
+            
+            # Check analyzed URLs
+            if analyzed_urls and hasattr(self, 'extracted_url'):
+                url_found = any(entry.get('url') == self.extracted_url for entry in analyzed_urls)
+                if url_found:
+                    self.log("✅ Analyzed URL tracked in preferences")
+                else:
+                    self.log("⚠️ Analyzed URL not found in preferences")
+            
+            return True
+        else:
+            self.log(f"❌ Get preferences with extracted keywords failed: {result}", "ERROR")
+            return False
+
+    def test_extract_keywords_unauthorized(self) -> bool:
+        """Test keyword extraction without authentication"""
+        self.log("Testing keyword extraction without authentication...")
+        
+        test_data = {"url": "https://www.apollo.io"}
+        result = self.make_request("POST", "/extract-keywords", data=test_data)
+        
+        if result["status_code"] == 401:
+            self.log("✅ Keyword extraction properly protected (unauthorized access blocked)")
+            return True
+        else:
+            self.log(f"❌ Keyword extraction not properly protected: {result}", "ERROR")
+            return False
+
+    def test_analyze_seo_unauthorized(self) -> bool:
+        """Test SEO analysis without authentication"""
+        self.log("Testing SEO analysis without authentication...")
+        
+        test_data = {"url": "https://www.apollo.io"}
+        result = self.make_request("POST", "/analyze-seo", data=test_data)
+        
+        if result["status_code"] == 401:
+            self.log("✅ SEO analysis properly protected (unauthorized access blocked)")
+            return True
+        else:
+            self.log(f"❌ SEO analysis not properly protected: {result}", "ERROR")
+            return False
+
     def run_all_tests(self) -> Dict[str, bool]:
         """Run all backend tests"""
         self.log("=" * 60)
