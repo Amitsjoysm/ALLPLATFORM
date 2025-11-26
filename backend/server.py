@@ -429,11 +429,107 @@ async def trigger_manual_scan(
     }
 
 
+# ============= API TOKEN MANAGEMENT =============
+
+@api_router.post("/tokens/generate")
+@limiter.limit("5/hour")
+async def generate_user_api_token(
+    request: Request,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: User = Depends(get_current_user())
+):
+    """Generate a new API token for the current user"""
+    # Generate token
+    token = generate_api_token()
+    token_hash = hash_api_token(token)
+    
+    # Store in database
+    api_token = APIToken(
+        user_id=current_user.id,
+        token_hash=token_hash,
+        permissions=["read", "write"]
+    )
+    
+    doc = api_token.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    
+    await db.api_tokens.insert_one(doc)
+    
+    logger.info(f"API token generated for user {current_user.email}")
+    
+    # Return the plain token (only time it's visible)
+    return {
+        "token": token,
+        "token_id": api_token.id,
+        "message": "Save this token securely. It won't be shown again."
+    }
+
+
+@api_router.get("/tokens")
+async def list_user_tokens(
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: User = Depends(get_current_user())
+):
+    """List all API tokens for current user (hashed)"""
+    cursor = db.api_tokens.find(
+        {"user_id": current_user.id},
+        {"_id": 0, "token_hash": 0}
+    ).sort("created_at", -1)
+    
+    tokens = await cursor.to_list(length=100)
+    return tokens
+
+
+@api_router.delete("/tokens/{token_id}")
+async def revoke_api_token(
+    token_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: User = Depends(get_current_user())
+):
+    """Revoke an API token"""
+    result = await db.api_tokens.update_one(
+        {"id": token_id, "user_id": current_user.id},
+        {"$set": {"is_active": False}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Token not found")
+    
+    logger.info(f"API token {token_id} revoked for user {current_user.email}")
+    return {"message": "Token revoked successfully"}
+
+
 # ============= HEALTH CHECK =============
 
 @api_router.get("/health")
-async def health_check():
-    return {"status": "healthy", "service": "Traffic Opportunity Engine"}
+async def health_check(db: AsyncIOMotorDatabase = Depends(get_db)):
+    """Enhanced health check with dependency status"""
+    health_status = {
+        "status": "healthy",
+        "service": "Traffic Opportunity Engine",
+        "version": "1.0.0",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Check MongoDB
+    try:
+        await db.command("ping")
+        health_status["database"] = "connected"
+    except Exception as e:
+        health_status["database"] = f"error: {str(e)}"
+        health_status["status"] = "degraded"
+    
+    # Check Redis (for Celery)
+    try:
+        import redis
+        r = redis.from_url(settings.REDIS_URL)
+        r.ping()
+        health_status["redis"] = "connected"
+    except Exception as e:
+        health_status["redis"] = f"error: {str(e)}"
+        health_status["status"] = "degraded"
+    
+    return health_status
 
 
 # Include router
