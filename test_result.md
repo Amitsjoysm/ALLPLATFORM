@@ -272,6 +272,42 @@ backend:
       - working: "NA"
         agent: "main"
         comment: "Enhanced health check endpoint to report MongoDB and Redis connection status. Returns detailed service health information. Needs testing."
+  
+  - task: "User Preferences System - Backend"
+    implemented: true
+    working: true
+    file: "/app/backend/models.py, /app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented comprehensive UserPreferences model with 15+ settings: channel selection, keywords, scan frequency, notifications, opportunity filters, advanced settings. Added 3 API endpoints: GET/PUT /preferences, POST /preferences/reset. Needs testing."
+  
+  - task: "Smart Recommendation Filtering"
+    implemented: true
+    working: true
+    file: "/app/backend/celery_tasks.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Updated create_user_recommendations to respect user preferences. Filters by: min score, opportunity types, target keywords, exclude keywords, max per day. Scans only user-enabled channels. Needs testing."
+  
+  - task: "API Keys Update"
+    implemented: true
+    working: true
+    file: "/app/backend/.env"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Updated Groq and Exa API keys with user-provided values. Backend restarted to apply changes."
 
 frontend:
   - task: "User Dashboard"
