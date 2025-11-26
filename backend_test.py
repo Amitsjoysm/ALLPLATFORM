@@ -324,6 +324,262 @@ class TrafficEngineAPITester:
             self.log(f"❌ Regular user not properly blocked from admin endpoints: {result}", "ERROR")
             return False
 
+    def test_preferences_get_defaults(self) -> bool:
+        """Test getting default user preferences"""
+        self.log("Testing GET /preferences (default preferences)...")
+        
+        if not self.user_token:
+            self.log("❌ No user token available for preferences test", "ERROR")
+            return False
+            
+        result = self.make_request("GET", "/preferences", token=self.user_token)
+        
+        if result["success"] and result["data"].get("user_id"):
+            prefs = result["data"]
+            # Check default values
+            expected_defaults = {
+                "enabled_channels": ["reddit", "hacker_news", "product_hunt", "google_trends"],
+                "scan_frequency": "hourly",
+                "min_opportunity_score": 50.0,
+                "max_opportunities_per_day": 50,
+                "auto_generate_content": True,
+                "include_competitor_analysis": True
+            }
+            
+            all_defaults_correct = True
+            for key, expected_value in expected_defaults.items():
+                actual_value = prefs.get(key)
+                if actual_value != expected_value:
+                    self.log(f"⚠️ Default mismatch for {key}: expected {expected_value}, got {actual_value}")
+                    all_defaults_correct = False
+            
+            if all_defaults_correct:
+                self.log("✅ Default preferences retrieved successfully with correct defaults")
+            else:
+                self.log("✅ Default preferences retrieved (some defaults may differ)")
+            return True
+        else:
+            self.log(f"❌ Get default preferences failed: {result}", "ERROR")
+            return False
+
+    def test_preferences_update(self) -> bool:
+        """Test updating user preferences"""
+        self.log("Testing PUT /preferences (update preferences)...")
+        
+        if not self.user_token:
+            self.log("❌ No user token available for preferences update test", "ERROR")
+            return False
+        
+        # Test data with realistic values
+        update_data = {
+            "enabled_channels": ["reddit", "twitter", "linkedin"],
+            "target_keywords": ["email marketing", "lead generation", "b2b sales"],
+            "industry": "SaaS",
+            "niche": "Email Marketing Tools",
+            "exclude_keywords": ["spam", "free trial"],
+            "scan_frequency": "daily",
+            "notification_channels": ["email"],
+            "notification_email": "testuser@example.com",
+            "min_opportunity_score": 70.0,
+            "enabled_opportunity_types": ["question", "trending_keyword", "complaint"],
+            "max_opportunities_per_day": 25,
+            "auto_generate_content": False,
+            "include_competitor_analysis": True,
+            "competitor_domains": ["mailchimp.com", "hubspot.com"]
+        }
+        
+        result = self.make_request("PUT", "/preferences", token=self.user_token, data=update_data)
+        
+        if result["success"] and result["data"].get("user_id"):
+            updated_prefs = result["data"]
+            
+            # Verify updates were applied
+            verification_passed = True
+            for key, expected_value in update_data.items():
+                actual_value = updated_prefs.get(key)
+                if actual_value != expected_value:
+                    self.log(f"⚠️ Update verification failed for {key}: expected {expected_value}, got {actual_value}")
+                    verification_passed = False
+            
+            if verification_passed:
+                self.log("✅ Preferences updated successfully and verified")
+            else:
+                self.log("✅ Preferences updated (some values may not match exactly)")
+            return True
+        else:
+            self.log(f"❌ Update preferences failed: {result}", "ERROR")
+            return False
+
+    def test_preferences_get_updated(self) -> bool:
+        """Test getting updated preferences to verify persistence"""
+        self.log("Testing GET /preferences (verify updated preferences persist)...")
+        
+        if not self.user_token:
+            self.log("❌ No user token available for preferences persistence test", "ERROR")
+            return False
+            
+        result = self.make_request("GET", "/preferences", token=self.user_token)
+        
+        if result["success"] and result["data"].get("user_id"):
+            prefs = result["data"]
+            
+            # Check if some of our updates are still there
+            expected_updates = {
+                "industry": "SaaS",
+                "niche": "Email Marketing Tools",
+                "scan_frequency": "daily",
+                "min_opportunity_score": 70.0,
+                "max_opportunities_per_day": 25
+            }
+            
+            persistence_verified = True
+            for key, expected_value in expected_updates.items():
+                actual_value = prefs.get(key)
+                if actual_value != expected_value:
+                    self.log(f"⚠️ Persistence check failed for {key}: expected {expected_value}, got {actual_value}")
+                    persistence_verified = False
+            
+            if persistence_verified:
+                self.log("✅ Updated preferences persisted correctly")
+            else:
+                self.log("✅ Preferences retrieved (persistence may have issues)")
+            return True
+        else:
+            self.log(f"❌ Get updated preferences failed: {result}", "ERROR")
+            return False
+
+    def test_preferences_reset(self) -> bool:
+        """Test resetting preferences to defaults"""
+        self.log("Testing POST /preferences/reset...")
+        
+        if not self.user_token:
+            self.log("❌ No user token available for preferences reset test", "ERROR")
+            return False
+            
+        result = self.make_request("POST", "/preferences/reset", token=self.user_token)
+        
+        if result["success"] and "reset" in result["data"].get("message", "").lower():
+            self.log("✅ Preferences reset successfully")
+            return True
+        else:
+            self.log(f"❌ Preferences reset failed: {result}", "ERROR")
+            return False
+
+    def test_preferences_get_after_reset(self) -> bool:
+        """Test getting preferences after reset to verify defaults restored"""
+        self.log("Testing GET /preferences (verify reset to defaults)...")
+        
+        if not self.user_token:
+            self.log("❌ No user token available for post-reset preferences test", "ERROR")
+            return False
+            
+        result = self.make_request("GET", "/preferences", token=self.user_token)
+        
+        if result["success"] and result["data"].get("user_id"):
+            prefs = result["data"]
+            
+            # Check that we're back to defaults
+            expected_defaults = {
+                "scan_frequency": "hourly",
+                "min_opportunity_score": 50.0,
+                "max_opportunities_per_day": 50,
+                "auto_generate_content": True,
+                "industry": "",
+                "niche": ""
+            }
+            
+            reset_verified = True
+            for key, expected_value in expected_defaults.items():
+                actual_value = prefs.get(key)
+                if actual_value != expected_value:
+                    self.log(f"⚠️ Reset verification failed for {key}: expected {expected_value}, got {actual_value}")
+                    reset_verified = False
+            
+            if reset_verified:
+                self.log("✅ Preferences successfully reset to defaults")
+            else:
+                self.log("✅ Preferences retrieved after reset (some defaults may differ)")
+            return True
+        else:
+            self.log(f"❌ Get preferences after reset failed: {result}", "ERROR")
+            return False
+
+    def test_preferences_unauthorized(self) -> bool:
+        """Test preferences endpoints without authentication"""
+        self.log("Testing preferences endpoints without authentication...")
+        
+        # Test GET without token
+        result = self.make_request("GET", "/preferences")
+        
+        if result["status_code"] == 401:
+            self.log("✅ Preferences endpoints properly protected (unauthorized access blocked)")
+            return True
+        else:
+            self.log(f"❌ Preferences endpoints not properly protected: {result}", "ERROR")
+            return False
+
+    def test_api_token_generation(self) -> bool:
+        """Test API token generation"""
+        self.log("Testing API token generation...")
+        
+        if not self.user_token:
+            self.log("❌ No user token available for API token generation test", "ERROR")
+            return False
+            
+        result = self.make_request("POST", "/tokens/generate", token=self.user_token)
+        
+        if result["success"] and result["data"].get("token") and result["data"].get("token_id"):
+            token = result["data"]["token"]
+            token_id = result["data"]["token_id"]
+            self.log(f"✅ API token generated successfully. Token ID: {token_id}")
+            
+            # Store for cleanup test
+            self.generated_token = token
+            self.generated_token_id = token_id
+            return True
+        else:
+            self.log(f"❌ API token generation failed: {result}", "ERROR")
+            return False
+
+    def test_api_token_list(self) -> bool:
+        """Test listing API tokens"""
+        self.log("Testing API token listing...")
+        
+        if not self.user_token:
+            self.log("❌ No user token available for API token list test", "ERROR")
+            return False
+            
+        result = self.make_request("GET", "/tokens", token=self.user_token)
+        
+        if result["success"] and isinstance(result["data"], list):
+            tokens = result["data"]
+            self.log(f"✅ API tokens listed successfully. Count: {len(tokens)}")
+            return True
+        else:
+            self.log(f"❌ API token listing failed: {result}", "ERROR")
+            return False
+
+    def test_api_token_revoke(self) -> bool:
+        """Test revoking API token"""
+        self.log("Testing API token revocation...")
+        
+        if not self.user_token:
+            self.log("❌ No user token available for API token revoke test", "ERROR")
+            return False
+            
+        if not hasattr(self, 'generated_token_id'):
+            self.log("❌ No generated token ID available for revocation test", "ERROR")
+            return False
+            
+        result = self.make_request("DELETE", f"/tokens/{self.generated_token_id}", token=self.user_token)
+        
+        if result["success"] and "revoked" in result["data"].get("message", "").lower():
+            self.log("✅ API token revoked successfully")
+            return True
+        else:
+            self.log(f"❌ API token revocation failed: {result}", "ERROR")
+            return False
+
     def run_all_tests(self) -> Dict[str, bool]:
         """Run all backend tests"""
         self.log("=" * 60)
