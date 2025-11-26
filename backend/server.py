@@ -56,8 +56,25 @@ async def lifespan(app: FastAPI):
     await close_mongo_connection()
 
 
-app = FastAPI(title="Traffic Opportunity Engine", version="1.0.0", lifespan=lifespan)
+app = FastAPI(
+    title="Traffic Opportunity Engine",
+    version="1.0.0",
+    lifespan=lifespan,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc"
+)
 api_router = APIRouter(prefix="/api")
+
+# Add rate limiter state
+app.state.limiter = limiter
+
+# Rate limit exceeded handler
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        content={"detail": "Rate limit exceeded. Please try again later."}
+    )
 
 
 # Dependency to get database
