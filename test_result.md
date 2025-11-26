@@ -357,6 +357,18 @@ frontend:
       - working: "NA"
         agent: "main"
         comment: "Changed UI theme from dark to modern light theme with proper contrast. Updated CSS variables for background, foreground, cards, borders, etc. Enhanced with shadow utilities. Needs visual testing."
+  
+  - task: "Settings/Preferences Page - Frontend"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/Settings.jsx, /app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Created comprehensive Settings page with 6 sections: Channel Selection (11 platforms), Topics/Keywords (industry, niche, target/exclude keywords), Scan Frequency, Notifications (email/slack/whatsapp), Opportunity Filters (score, types, max per day), Advanced Settings (competitor domains). Added route /settings and Settings button to Dashboard. Needs testing."
 
 metadata:
   created_by: "main_agent"
