@@ -7,6 +7,7 @@ import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
+import Settings from './pages/Settings';
 import { isAuthenticated, isAdmin } from './utils/auth';
 import './App.css';
 
