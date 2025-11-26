@@ -316,6 +316,14 @@ class UserPreferencesCreate(BaseModel):
     competitor_domains: Optional[List[str]] = None
     extracted_keywords: Optional[List[str]] = None
     analyzed_urls: Optional[List[Dict[str, Any]]] = None
+    enable_lead_identification: Optional[bool] = None
+    product_name: Optional[str] = None
+    product_description: Optional[str] = None
+    target_customer_profile: Optional[str] = None
+    key_problems_solved: Optional[List[str]] = None
+    buying_signals: Optional[List[str]] = None
+    competitive_advantages: Optional[List[str]] = None
+    min_lead_score: Optional[float] = None
 
 
 class UserPreferencesResponse(BaseModel):
