@@ -29,7 +29,16 @@ async def async_run_hourly_scan():
     try:
         logger.info("=== Starting hourly traffic scan ===")
         
-        # Initialize scrapers
+        # Get all users and their channel preferences
+        users_prefs = await db.user_preferences.find({}, {"_id": 0, "user_id": 1, "enabled_channels": 1}).to_list(1000)
+        
+        # Collect all unique enabled channels across all users
+        all_enabled_channels = set()
+        for prefs in users_prefs:
+            if prefs.get("enabled_channels"):
+                all_enabled_channels.update(prefs["enabled_channels"])
+        
+        # Initialize scrapers - get active channels that are enabled by at least one user
         channel_configs = await db.channels.find({"is_active": True}, {"_id": 0}).to_list(100)
         
         # If no channels configured, create defaults
