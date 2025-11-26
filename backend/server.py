@@ -877,6 +877,302 @@ async def get_rapidapi_keys_stats(
     }
 
 
+# ============= LEAD MANAGEMENT =============
+
+@api_router.get("/leads", response_model=List[LeadResponse])
+@limiter.limit("60/minute")
+async def get_user_leads(
+    request: Request,
+    status: Optional[str] = Query(None, description="Filter by status"),
+    quality: Optional[str] = Query(None, description="Filter by quality score"),
+    limit: int = Query(50, le=200),
+    skip: int = Query(0, ge=0),
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: User = Depends(get_current_user_flexible)
+):
+    """Get leads for the current user with filters"""
+    query = {"user_id": current_user.id}
+    
+    # Apply filters
+    if status:
+        query["status"] = status
+    if quality:
+        query["quality_score"] = quality
+    
+    # Get leads
+    leads = await db.leads.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    # Convert datetime strings to datetime objects
+    for lead in leads:
+        if isinstance(lead.get('created_at'), str):
+            lead['created_at'] = datetime.fromisoformat(lead['created_at'])
+        if isinstance(lead.get('updated_at'), str):
+            lead['updated_at'] = datetime.fromisoformat(lead['updated_at'])
+        if lead.get('contacted_at') and isinstance(lead['contacted_at'], str):
+            lead['contacted_at'] = datetime.fromisoformat(lead['contacted_at'])
+    
+    return [LeadResponse(**lead) for lead in leads]
+
+
+@api_router.get("/leads/stats")
+@limiter.limit("30/minute")
+async def get_leads_stats(
+    request: Request,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: User = Depends(get_current_user_flexible)
+):
+    """Get lead statistics for the current user"""
+    user_id = current_user.id
+    
+    # Total leads
+    total = await db.leads.count_documents({"user_id": user_id})
+    
+    # By status
+    new_count = await db.leads.count_documents({"user_id": user_id, "status": LeadStatus.NEW.value})
+    contacted = await db.leads.count_documents({"user_id": user_id, "status": LeadStatus.CONTACTED.value})
+    qualified = await db.leads.count_documents({"user_id": user_id, "status": LeadStatus.QUALIFIED.value})
+    
+    # By quality
+    hot = await db.leads.count_documents({"user_id": user_id, "quality_score": LeadQualityScore.HOT.value})
+    warm = await db.leads.count_documents({"user_id": user_id, "quality_score": LeadQualityScore.WARM.value})
+    cold = await db.leads.count_documents({"user_id": user_id, "quality_score": LeadQualityScore.COLD.value})
+    
+    # Recent leads (last 7 days)
+    seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    recent = await db.leads.count_documents({
+        "user_id": user_id,
+        "created_at": {"$gte": seven_days_ago.isoformat()}
+    })
+    
+    return {
+        "total_leads": total,
+        "by_status": {
+            "new": new_count,
+            "contacted": contacted,
+            "qualified": qualified
+        },
+        "by_quality": {
+            "hot": hot,
+            "warm": warm,
+            "cold": cold
+        },
+        "recent_7_days": recent
+    }
+
+
+@api_router.post("/leads/{lead_id}/contact")
+@limiter.limit("30/minute")
+async def mark_lead_contacted(
+    request: Request,
+    lead_id: str,
+    contact_notes: Optional[str] = None,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: User = Depends(get_current_user_flexible)
+):
+    """Mark a lead as contacted"""
+    # Find lead
+    lead = await db.leads.find_one({"id": lead_id, "user_id": current_user.id}, {"_id": 0})
+    
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    # Update lead
+    update_data = {
+        "status": LeadStatus.CONTACTED.value,
+        "contacted_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    if contact_notes:
+        update_data["contact_notes"] = contact_notes
+    
+    result = await db.leads.update_one(
+        {"id": lead_id, "user_id": current_user.id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    logger.info(f"Lead {lead_id} marked as contacted by {current_user.email}")
+    
+    return {"status": "success", "message": "Lead marked as contacted"}
+
+
+@api_router.put("/leads/{lead_id}")
+@limiter.limit("30/minute")
+async def update_lead(
+    request: Request,
+    lead_id: str,
+    lead_update: LeadUpdate,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: User = Depends(get_current_user_flexible)
+):
+    """Update lead status and notes"""
+    # Find lead
+    lead = await db.leads.find_one({"id": lead_id, "user_id": current_user.id}, {"_id": 0})
+    
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    # Build update data
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    if lead_update.status is not None:
+        update_data["status"] = lead_update.status.value
+        if lead_update.status == LeadStatus.CONTACTED and not lead.get("contacted_at"):
+            update_data["contacted_at"] = datetime.now(timezone.utc).isoformat()
+    
+    if lead_update.contact_notes is not None:
+        update_data["contact_notes"] = lead_update.contact_notes
+    
+    result = await db.leads.update_one(
+        {"id": lead_id, "user_id": current_user.id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    logger.info(f"Lead {lead_id} updated by {current_user.email}")
+    
+    return {"status": "success", "message": "Lead updated"}
+
+
+@api_router.delete("/leads/{lead_id}")
+@limiter.limit("30/minute")
+async def delete_lead(
+    request: Request,
+    lead_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: User = Depends(get_current_user_flexible)
+):
+    """Delete a lead"""
+    result = await db.leads.delete_one({"id": lead_id, "user_id": current_user.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    logger.info(f"Lead {lead_id} deleted by {current_user.email}")
+    
+    return {"status": "success", "message": "Lead deleted"}
+
+
+@api_router.post("/leads/identify")
+@limiter.limit("5/hour")
+async def trigger_lead_identification(
+    request: Request,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: User = Depends(get_current_user_flexible)
+):
+    """Manually trigger lead identification for current user"""
+    try:
+        from celery_tasks import identify_linkedin_leads
+        
+        # Trigger task for specific user
+        identify_linkedin_leads.delay(current_user.id)
+        
+        logger.info(f"Lead identification triggered by {current_user.email}")
+        
+        return {
+            "status": "success",
+            "message": "Lead identification started. You will be notified when complete."
+        }
+    except Exception as e:
+        logger.error(f"Error triggering lead identification: {e}")
+        raise HTTPException(status_code=500, detail="Failed to trigger lead identification")
+
+
+@api_router.get("/admin/leads", response_model=List[LeadResponse])
+@limiter.limit("60/minute")
+async def get_all_leads(
+    request: Request,
+    user_id: Optional[str] = Query(None, description="Filter by user ID"),
+    status: Optional[str] = Query(None, description="Filter by status"),
+    quality: Optional[str] = Query(None, description="Filter by quality score"),
+    limit: int = Query(100, le=500),
+    skip: int = Query(0, ge=0),
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.ADMIN, UserRole.SUPERADMIN]))
+):
+    """Get all leads (admin only) with filters"""
+    query = {}
+    
+    # Apply filters
+    if user_id:
+        query["user_id"] = user_id
+    if status:
+        query["status"] = status
+    if quality:
+        query["quality_score"] = quality
+    
+    # Get leads
+    leads = await db.leads.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    # Convert datetime strings to datetime objects
+    for lead in leads:
+        if isinstance(lead.get('created_at'), str):
+            lead['created_at'] = datetime.fromisoformat(lead['created_at'])
+        if isinstance(lead.get('updated_at'), str):
+            lead['updated_at'] = datetime.fromisoformat(lead['updated_at'])
+        if lead.get('contacted_at') and isinstance(lead['contacted_at'], str):
+            lead['contacted_at'] = datetime.fromisoformat(lead['contacted_at'])
+    
+    return [LeadResponse(**lead) for lead in leads]
+
+
+@api_router.get("/admin/leads/stats")
+@limiter.limit("30/minute")
+async def get_admin_leads_stats(
+    request: Request,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.ADMIN, UserRole.SUPERADMIN]))
+):
+    """Get overall lead statistics (admin only)"""
+    # Total leads
+    total = await db.leads.count_documents({})
+    
+    # By status
+    new_count = await db.leads.count_documents({"status": LeadStatus.NEW.value})
+    contacted = await db.leads.count_documents({"status": LeadStatus.CONTACTED.value})
+    qualified = await db.leads.count_documents({"status": LeadStatus.QUALIFIED.value})
+    
+    # By quality
+    hot = await db.leads.count_documents({"quality_score": LeadQualityScore.HOT.value})
+    warm = await db.leads.count_documents({"quality_score": LeadQualityScore.WARM.value})
+    cold = await db.leads.count_documents({"quality_score": LeadQualityScore.COLD.value})
+    
+    # Recent leads (last 7 days)
+    seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    recent = await db.leads.count_documents({
+        "created_at": {"$gte": seven_days_ago.isoformat()}
+    })
+    
+    # Leads by user (top 10)
+    pipeline = [
+        {"$group": {"_id": "$user_id", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 10}
+    ]
+    leads_by_user = await db.leads.aggregate(pipeline).to_list(10)
+    
+    return {
+        "total_leads": total,
+        "by_status": {
+            "new": new_count,
+            "contacted": contacted,
+            "qualified": qualified
+        },
+        "by_quality": {
+            "hot": hot,
+            "warm": warm,
+            "cold": cold
+        },
+        "recent_7_days": recent,
+        "leads_by_user": leads_by_user
+    }
+
+
 # ============= HEALTH CHECK =============
 
 @api_router.get("/health")
