@@ -6,6 +6,7 @@ from scrapers import (
     ExaResearchScraper, QuoraScraper, TwitterScraper, LinkedInScraper, 
     YouTubeScraper, CompetitorScraper, FacebookScraper
 )
+from scrapers.linkedin_posts_rapidapi_scraper import LinkedInPostsRapidAPIScraper
 from agents import OrchestratorAgent
 from models import RawSignal, Opportunity, OpportunityStatus, Recommendation
 import logging
