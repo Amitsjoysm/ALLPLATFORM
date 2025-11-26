@@ -754,6 +754,128 @@ async def save_extracted_keywords(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
+# ============= RAPIDAPI KEY MANAGEMENT =============
+
+@api_router.post("/admin/rapidapi-keys", response_model=RapidAPIKeyResponse)
+@limiter.limit("10/hour")
+async def create_rapidapi_key(
+    request: Request,
+    key_data: RapidAPIKeyCreate,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.ADMIN, UserRole.SUPERADMIN]))
+):
+    """Create a new RapidAPI key for LinkedIn scraping"""
+    # Check if key already exists
+    existing = await db.rapidapi_keys.find_one({"api_key": key_data.api_key})
+    if existing:
+        raise HTTPException(status_code=400, detail="This API key already exists")
+    
+    # Create new key
+    api_key = RapidAPIKey(
+        name=key_data.name,
+        api_key=key_data.api_key,
+        notes=key_data.notes,
+        created_by=current_user.id
+    )
+    
+    doc = api_key.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    if doc.get('last_used'):
+        doc['last_used'] = doc['last_used'].isoformat()
+    
+    await db.rapidapi_keys.insert_one(doc)
+    logger.info(f"RapidAPI key '{key_data.name}' created by {current_user.email}")
+    
+    return RapidAPIKeyResponse(**api_key.model_dump())
+
+
+@api_router.get("/admin/rapidapi-keys", response_model=List[RapidAPIKeyResponse])
+async def get_rapidapi_keys(
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.ADMIN, UserRole.SUPERADMIN]))
+):
+    """Get all RapidAPI keys"""
+    keys = await db.rapidapi_keys.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    
+    for key in keys:
+        if isinstance(key.get('created_at'), str):
+            key['created_at'] = datetime.fromisoformat(key['created_at'])
+        if key.get('last_used') and isinstance(key['last_used'], str):
+            key['last_used'] = datetime.fromisoformat(key['last_used'])
+    
+    return [RapidAPIKeyResponse(**key) for key in keys]
+
+
+@api_router.put("/admin/rapidapi-keys/{key_id}/toggle")
+async def toggle_rapidapi_key(
+    key_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.ADMIN, UserRole.SUPERADMIN]))
+):
+    """Enable or disable a RapidAPI key"""
+    key = await db.rapidapi_keys.find_one({"id": key_id}, {"_id": 0})
+    
+    if not key:
+        raise HTTPException(status_code=404, detail="API key not found")
+    
+    new_status = not key.get("is_active", True)
+    
+    result = await db.rapidapi_keys.update_one(
+        {"id": key_id},
+        {"$set": {"is_active": new_status}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="API key not found")
+    
+    status_text = "enabled" if new_status else "disabled"
+    logger.info(f"RapidAPI key {key_id} {status_text} by {current_user.email}")
+    
+    return {"status": "success", "message": f"API key {status_text}", "is_active": new_status}
+
+
+@api_router.delete("/admin/rapidapi-keys/{key_id}")
+async def delete_rapidapi_key(
+    key_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.ADMIN, UserRole.SUPERADMIN]))
+):
+    """Delete a RapidAPI key"""
+    result = await db.rapidapi_keys.delete_one({"id": key_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="API key not found")
+    
+    logger.info(f"RapidAPI key {key_id} deleted by {current_user.email}")
+    
+    return {"status": "success", "message": "API key deleted"}
+
+
+@api_router.get("/admin/rapidapi-keys/stats")
+async def get_rapidapi_keys_stats(
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.ADMIN, UserRole.SUPERADMIN]))
+):
+    """Get statistics about RapidAPI key usage"""
+    total_keys = await db.rapidapi_keys.count_documents({})
+    active_keys = await db.rapidapi_keys.count_documents({"is_active": True})
+    
+    # Get total usage
+    pipeline = [
+        {"$group": {"_id": None, "total_usage": {"$sum": "$usage_count"}}}
+    ]
+    usage_result = await db.rapidapi_keys.aggregate(pipeline).to_list(1)
+    total_usage = usage_result[0]["total_usage"] if usage_result else 0
+    
+    return {
+        "total_keys": total_keys,
+        "active_keys": active_keys,
+        "inactive_keys": total_keys - active_keys,
+        "total_usage": total_usage
+    }
+
+
 # ============= HEALTH CHECK =============
 
 @api_router.get("/health")
