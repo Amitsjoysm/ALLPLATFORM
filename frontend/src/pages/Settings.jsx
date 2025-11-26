@@ -83,7 +83,16 @@ const Settings = () => {
         max_opportunities_per_day: response.data.max_opportunities_per_day || 50,
         auto_generate_content: response.data.auto_generate_content ?? true,
         include_competitor_analysis: response.data.include_competitor_analysis ?? true,
-        competitor_domains: response.data.competitor_domains || []
+        competitor_domains: response.data.competitor_domains || [],
+        // Lead Generation fields
+        enable_lead_identification: response.data.enable_lead_identification ?? true,
+        product_name: response.data.product_name || '',
+        product_description: response.data.product_description || '',
+        target_customer_profile: response.data.target_customer_profile || '',
+        key_problems_solved: response.data.key_problems_solved || [],
+        buying_signals: response.data.buying_signals || [],
+        competitive_advantages: response.data.competitive_advantages || [],
+        min_lead_score: response.data.min_lead_score || 40
       });
       setLoading(false);
     } catch (error) {
