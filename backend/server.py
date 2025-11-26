@@ -105,6 +105,17 @@ async def register(request: Request, user_data: UserCreate, db: AsyncIOMotorData
     
     await db.users.insert_one(doc)
     
+    # Create default user preferences
+    prefs = UserPreferences(user_id=user.id)
+    prefs_doc = prefs.model_dump()
+    prefs_doc['created_at'] = prefs_doc['created_at'].isoformat()
+    prefs_doc['updated_at'] = prefs_doc['updated_at'].isoformat()
+    prefs_doc['enabled_channels'] = [ch.value for ch in prefs.enabled_channels]
+    prefs_doc['scan_frequency'] = prefs_doc['scan_frequency'].value
+    prefs_doc['notification_channels'] = [nc.value for nc in prefs.notification_channels]
+    prefs_doc['enabled_opportunity_types'] = [ot.value for ot in prefs.enabled_opportunity_types]
+    await db.user_preferences.insert_one(prefs_doc)
+    
     # Create access token
     access_token = create_access_token(data={"sub": user.id})
     
