@@ -501,6 +501,96 @@ async def revoke_api_token(
     return {"message": "Token revoked successfully"}
 
 
+
+# ============= USER PREFERENCES MANAGEMENT =============
+
+@api_router.get("/preferences", response_model=UserPreferencesResponse)
+async def get_user_preferences(
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: User = Depends(get_current_user())
+):
+    """Get current user's preferences"""
+    from models import UserPreferences, UserPreferencesResponse
+    
+    prefs = await db.user_preferences.find_one({"user_id": current_user.id}, {"_id": 0})
+    
+    if not prefs:
+        # Create default preferences
+        default_prefs = UserPreferences(user_id=current_user.id)
+        doc = default_prefs.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        doc['updated_at'] = doc['updated_at'].isoformat()
+        await db.user_preferences.insert_one(doc)
+        return UserPreferencesResponse(**default_prefs.model_dump())
+    
+    return UserPreferencesResponse(**prefs)
+
+
+@api_router.put("/preferences", response_model=UserPreferencesResponse)
+async def update_user_preferences(
+    preferences: UserPreferencesCreate,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: User = Depends(get_current_user())
+):
+    """Update current user's preferences"""
+    from models import UserPreferences, UserPreferencesCreate, UserPreferencesResponse
+    
+    # Get existing preferences or create new
+    existing = await db.user_preferences.find_one({"user_id": current_user.id}, {"_id": 0})
+    
+    if not existing:
+        # Create new with provided data
+        new_prefs = UserPreferences(user_id=current_user.id)
+        existing = new_prefs.model_dump()
+    
+    # Update with provided fields
+    update_data = preferences.model_dump(exclude_unset=True)
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    
+    for key, value in update_data.items():
+        existing[key] = value
+    
+    # Save to database
+    existing['updated_at'] = existing['updated_at'].isoformat()
+    if 'created_at' in existing and isinstance(existing['created_at'], datetime):
+        existing['created_at'] = existing['created_at'].isoformat()
+    
+    await db.user_preferences.update_one(
+        {"user_id": current_user.id},
+        {"$set": existing},
+        upsert=True
+    )
+    
+    logger.info(f"Preferences updated for user {current_user.email}")
+    
+    # Return updated preferences
+    result = await db.user_preferences.find_one({"user_id": current_user.id}, {"_id": 0})
+    return UserPreferencesResponse(**result)
+
+
+@api_router.post("/preferences/reset")
+async def reset_user_preferences(
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: User = Depends(get_current_user())
+):
+    """Reset user preferences to defaults"""
+    from models import UserPreferences
+    
+    default_prefs = UserPreferences(user_id=current_user.id)
+    doc = default_prefs.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    
+    await db.user_preferences.update_one(
+        {"user_id": current_user.id},
+        {"$set": doc},
+        upsert=True
+    )
+    
+    logger.info(f"Preferences reset to defaults for user {current_user.email}")
+    return {"message": "Preferences reset to defaults"}
+
+
 # ============= HEALTH CHECK =============
 
 @api_router.get("/health")
