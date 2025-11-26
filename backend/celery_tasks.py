@@ -249,3 +249,206 @@ def run_hourly_scan():
     finally:
         loop.close()
     return {"status": "completed"}
+
+
+async def async_identify_linkedin_leads(user_id: Optional[str] = None):
+    """Async implementation of LinkedIn lead identification"""
+    db = get_async_db()
+    
+    try:
+        logger.info("=== Starting LinkedIn lead identification ===")
+        
+        # Get users to process (specific user or all active users)
+        if user_id:
+            users = await db.users.find_one({"id": user_id, "is_active": True}, {"_id": 0})
+            users = [users] if users else []
+        else:
+            users = await db.users.find({"is_active": True}, {"_id": 0}).to_list(1000)
+        
+        if not users:
+            logger.info("No users to process for lead identification")
+            return
+        
+        total_leads_identified = 0
+        
+        for user in users:
+            try:
+                user_id = user["id"]
+                logger.info(f"Processing leads for user: {user['email']}")
+                
+                # Get user preferences
+                prefs = await db.user_preferences.find_one({"user_id": user_id}, {"_id": 0})
+                
+                if not prefs:
+                    from models import UserPreferences
+                    prefs = UserPreferences(user_id=user_id).model_dump()
+                
+                # Check if lead identification is enabled
+                if not prefs.get("enable_lead_identification", True):
+                    logger.info(f"Lead identification disabled for user {user['email']}")
+                    continue
+                
+                # Check if LinkedIn is enabled
+                enabled_channels = prefs.get("enabled_channels", [])
+                if "linkedin" not in enabled_channels and "linkedin_rapidapi" not in enabled_channels:
+                    logger.info(f"LinkedIn not enabled for user {user['email']}")
+                    continue
+                
+                # Build product profile
+                product_profile = {
+                    "product_name": prefs.get("product_name", "our product"),
+                    "product_description": prefs.get("product_description", ""),
+                    "target_customer_profile": prefs.get("target_customer_profile", ""),
+                    "key_problems_solved": prefs.get("key_problems_solved", []),
+                    "buying_signals": prefs.get("buying_signals", []),
+                }
+                
+                # Merge target and extracted keywords
+                target_keywords = prefs.get("target_keywords", [])
+                extracted_keywords = prefs.get("extracted_keywords", [])
+                all_keywords = list(set(target_keywords + extracted_keywords))
+                
+                if not all_keywords and not product_profile["product_name"]:
+                    logger.info(f"No keywords or product info configured for user {user['email']}")
+                    continue
+                
+                # Add keywords to product profile
+                product_profile["keywords"] = all_keywords
+                
+                # Get LinkedIn channel config
+                channel = await db.channels.find_one({
+                    "type": {"$in": ["linkedin_rapidapi", "linkedin"]},
+                    "is_active": True
+                }, {"_id": 0})
+                
+                if not channel:
+                    logger.info(f"No active LinkedIn channel found")
+                    continue
+                
+                # Initialize LinkedIn scraper and fetch posts with comments
+                from scrapers.linkedin_posts_rapidapi_scraper import LinkedInPostsRapidAPIScraper
+                
+                keywords_to_search = all_keywords[:5] if all_keywords else ["lead generation", "b2b"]
+                scraper = LinkedInPostsRapidAPIScraper(channel["id"], keywords_to_search)
+                
+                # Scrape with comments
+                _, posts_with_comments = await scraper.scrape_with_comments()
+                
+                if not posts_with_comments:
+                    logger.info(f"No posts with comments found for user {user['email']}")
+                    continue
+                
+                logger.info(f"Found {len(posts_with_comments)} posts with comments to analyze")
+                
+                # Initialize lead identifier agent
+                from agents.linkedin_lead_identifier_agent import LinkedInLeadIdentifierAgent
+                lead_agent = LinkedInLeadIdentifierAgent()
+                
+                # Analyze posts and comments for leads
+                qualified_leads = await lead_agent.batch_analyze_posts(
+                    posts_with_comments,
+                    product_profile
+                )
+                
+                if not qualified_leads:
+                    logger.info(f"No qualified leads found for user {user['email']}")
+                    continue
+                
+                # Filter by minimum score
+                min_score = prefs.get("min_lead_score", 40.0)
+                filtered_leads = [
+                    lead for lead in qualified_leads 
+                    if lead.get("quality_score", 0) >= min_score
+                ]
+                
+                logger.info(f"Found {len(filtered_leads)} leads above minimum score {min_score}")
+                
+                # Store leads in database
+                from models import Lead, LeadQualityScore, LeadStatus
+                
+                for lead_data in filtered_leads:
+                    try:
+                        # Calculate quality score category
+                        score = lead_data.get("quality_score", 0)
+                        if score >= 80:
+                            quality_score = LeadQualityScore.HOT
+                        elif score >= 60:
+                            quality_score = LeadQualityScore.WARM
+                        elif score >= 40:
+                            quality_score = LeadQualityScore.COLD
+                        else:
+                            quality_score = LeadQualityScore.UNQUALIFIED
+                        
+                        # Check if lead already exists
+                        linkedin_url = lead_data.get("linkedin_url", "")
+                        if linkedin_url:
+                            existing = await db.leads.find_one({
+                                "user_id": user_id,
+                                "linkedin_url": linkedin_url
+                            })
+                            
+                            if existing:
+                                logger.debug(f"Lead already exists: {linkedin_url}")
+                                continue
+                        
+                        # Extract keywords matched
+                        keywords_matched = []
+                        comment_text = lead_data.get("comment_text", "").lower()
+                        for keyword in all_keywords:
+                            if keyword.lower() in comment_text:
+                                keywords_matched.append(keyword)
+                        
+                        # Create lead
+                        lead = Lead(
+                            user_id=user_id,
+                            name=lead_data.get("author_name"),
+                            linkedin_url=linkedin_url or "N/A",
+                            comment_text=lead_data.get("comment_text", ""),
+                            post_url=lead_data.get("post_url", ""),
+                            post_content=lead_data.get("post_content"),
+                            quality_score=quality_score,
+                            score=score,
+                            status=LeadStatus.NEW,
+                            need_identified=lead_data.get("need_identified", ""),
+                            reason_qualified=lead_data.get("reason_qualified", ""),
+                            suggested_approach=lead_data.get("suggested_approach"),
+                            keywords_matched=keywords_matched,
+                            source_channel="linkedin_rapidapi"
+                        )
+                        
+                        await db.leads.insert_one(lead.model_dump())
+                        total_leads_identified += 1
+                        
+                    except Exception as e:
+                        logger.error(f"Error storing lead: {e}")
+                        continue
+                
+                logger.info(f"Stored {len(filtered_leads)} leads for user {user['email']}")
+                
+            except Exception as e:
+                logger.error(f"Error processing leads for user {user.get('email')}: {e}")
+                continue
+        
+        logger.info(f"=== Lead identification completed. Total leads: {total_leads_identified} ===")
+        
+    except Exception as e:
+        logger.error(f"Lead identification error: {e}", exc_info=True)
+    finally:
+        db.client.close()
+
+
+@celery_app.task(name="celery_tasks.identify_linkedin_leads")
+def identify_linkedin_leads(user_id: Optional[str] = None):
+    """Celery task for identifying LinkedIn leads
+    
+    Args:
+        user_id: Specific user ID to process, or None for all users
+    """
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(async_identify_linkedin_leads(user_id))
+    finally:
+        loop.close()
+    return {"status": "completed"}
+
