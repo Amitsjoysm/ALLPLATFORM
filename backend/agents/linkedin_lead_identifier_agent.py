@@ -291,17 +291,17 @@ Provide JSON response with lead qualification analysis. Set lead_source to "comm
     async def batch_analyze_posts(
         self,
         posts_with_comments: List[Dict[str, Any]],
-        user_keywords: List[str]
+        product_profile: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
         """
-        Analyze multiple posts and their comments
+        Analyze multiple posts and their comments for leads
         
         Args:
             posts_with_comments: List of posts, each containing comments
-            user_keywords: User's product keywords
+            product_profile: User's product profile
         
         Returns:
-            List of all qualified leads
+            List of all qualified leads (from both post authors and commenters)
         """
         all_leads = []
         
@@ -309,10 +309,10 @@ Provide JSON response with lead qualification analysis. Set lead_source to "comm
             post_data = post.get("post", {})
             comments = post.get("comments", [])
             
-            leads = await self.analyze_post_comments(
+            leads = await self.analyze_post_and_comments(
                 post_data,
                 comments,
-                user_keywords
+                product_profile
             )
             
             all_leads.extend(leads)
