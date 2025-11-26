@@ -202,3 +202,127 @@ class AgentContext(BaseModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+
+class NotificationChannel(str, Enum):
+    EMAIL = "email"
+    SLACK = "slack"
+    WHATSAPP = "whatsapp"
+    NONE = "none"
+
+
+class ScanFrequency(str, Enum):
+    HOURLY = "hourly"
+    DAILY = "daily"
+    TWICE_DAILY = "twice_daily"
+    WEEKLY = "weekly"
+    CUSTOM = "custom"
+
+
+class UserPreferences(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    
+    # Channel Selection - which platforms to scan
+    enabled_channels: List[ChannelType] = Field(
+        default_factory=lambda: [
+            ChannelType.REDDIT,
+            ChannelType.HACKER_NEWS,
+            ChannelType.PRODUCT_HUNT,
+            ChannelType.GOOGLE_TRENDS
+        ]
+    )
+    
+    # Topic/Keyword Preferences
+    target_keywords: List[str] = Field(default_factory=list)  # e.g., ["email verification", "b2b leads"]
+    industry: str = ""  # e.g., "SaaS", "B2B Marketing"
+    niche: str = ""  # e.g., "Email tools", "Lead generation"
+    exclude_keywords: List[str] = Field(default_factory=list)  # Keywords to avoid
+    
+    # Scan Frequency Control
+    scan_frequency: ScanFrequency = ScanFrequency.HOURLY
+    custom_cron: Optional[str] = None  # For custom frequency (e.g., "0 */3 * * *")
+    
+    # Notification Preferences
+    notification_channels: List[NotificationChannel] = Field(
+        default_factory=lambda: [NotificationChannel.NONE]
+    )
+    notification_email: Optional[str] = None
+    notification_slack_webhook: Optional[str] = None
+    notification_whatsapp_number: Optional[str] = None
+    notify_on_high_score_only: bool = True  # Only notify for high-priority opportunities
+    min_score_for_notification: float = 70.0
+    
+    # Opportunity Filters
+    min_opportunity_score: float = 50.0  # Minimum score threshold
+    enabled_opportunity_types: List[OpportunityType] = Field(
+        default_factory=lambda: [
+            OpportunityType.QUESTION,
+            OpportunityType.TRENDING_KEYWORD,
+            OpportunityType.COMPETITOR_MENTION,
+            OpportunityType.COMPLAINT,
+            OpportunityType.FORUM_DISCUSSION
+        ]
+    )
+    max_opportunities_per_day: int = 50  # Limit daily recommendations
+    
+    # Advanced Settings
+    auto_generate_content: bool = True  # Auto-generate content templates
+    include_competitor_analysis: bool = True
+    competitor_domains: List[str] = Field(default_factory=list)  # e.g., ["apollo.io", "hunter.io"]
+    
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class UserPreferencesCreate(BaseModel):
+    enabled_channels: Optional[List[ChannelType]] = None
+    target_keywords: Optional[List[str]] = None
+    industry: Optional[str] = None
+    niche: Optional[str] = None
+    exclude_keywords: Optional[List[str]] = None
+    scan_frequency: Optional[ScanFrequency] = None
+    custom_cron: Optional[str] = None
+    notification_channels: Optional[List[NotificationChannel]] = None
+    notification_email: Optional[str] = None
+    notification_slack_webhook: Optional[str] = None
+    notification_whatsapp_number: Optional[str] = None
+    notify_on_high_score_only: Optional[bool] = None
+    min_score_for_notification: Optional[float] = None
+    min_opportunity_score: Optional[float] = None
+    enabled_opportunity_types: Optional[List[OpportunityType]] = None
+    max_opportunities_per_day: Optional[int] = None
+    auto_generate_content: Optional[bool] = None
+    include_competitor_analysis: Optional[bool] = None
+    competitor_domains: Optional[List[str]] = None
+
+
+class UserPreferencesResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str
+    user_id: str
+    enabled_channels: List[ChannelType]
+    target_keywords: List[str]
+    industry: str
+    niche: str
+    exclude_keywords: List[str]
+    scan_frequency: ScanFrequency
+    custom_cron: Optional[str]
+    notification_channels: List[NotificationChannel]
+    notification_email: Optional[str]
+    notification_slack_webhook: Optional[str]
+    notification_whatsapp_number: Optional[str]
+    notify_on_high_score_only: bool
+    min_score_for_notification: float
+    min_opportunity_score: float
+    enabled_opportunity_types: List[OpportunityType]
+    max_opportunities_per_day: int
+    auto_generate_content: bool
+    include_competitor_analysis: bool
+    competitor_domains: List[str]
+    created_at: datetime
+    updated_at: datetime
