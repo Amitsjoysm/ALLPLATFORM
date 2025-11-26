@@ -244,6 +244,10 @@ class UserPreferences(BaseModel):
     niche: str = ""  # e.g., "Email tools", "Lead generation"
     exclude_keywords: List[str] = Field(default_factory=list)  # Keywords to avoid
     
+    # Smart Keyword Discovery (URL-based extraction)
+    extracted_keywords: List[str] = Field(default_factory=list)  # Keywords extracted from URLs
+    analyzed_urls: List[Dict[str, Any]] = Field(default_factory=list)  # History of analyzed URLs with metadata
+    
     # Scan Frequency Control
     scan_frequency: ScanFrequency = ScanFrequency.HOURLY
     custom_cron: Optional[str] = None  # For custom frequency (e.g., "0 */3 * * *")
