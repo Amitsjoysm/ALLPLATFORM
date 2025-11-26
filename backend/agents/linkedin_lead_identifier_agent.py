@@ -19,30 +19,38 @@ class LinkedInLeadIdentifierAgent(BaseAgent):
             model="llama-3.3-70b-versatile"
         )
         
-        self.system_prompt = """You are a B2B lead qualification expert specialized in analyzing LinkedIn comments to identify potential customers.
+        self.system_prompt = """You are a B2B lead qualification expert specialized in analyzing LinkedIn posts and comments to identify potential customers.
 
-Your task is to analyze comments on LinkedIn posts and determine if the commenter is a potential lead who might benefit from the user's product/service.
+Your task is to analyze either:
+1. POST AUTHORS - Determine if the person posting has a need/problem that the product solves
+2. COMMENTERS - Determine if the commenter is expressing interest/need
 
-For each comment, provide:
+For each person, provide:
 1. lead_qualified: boolean - Is this a qualified lead?
 2. quality_score: number (0-100) - How likely are they to be interested?
 3. need_identified: string - What specific need/problem did you identify?
 4. reason_qualified: string - Why is this person a qualified lead?
 5. suggested_approach: string - How should they be approached?
 6. confidence: string - "high", "medium", or "low"
+7. lead_source: string - "post_author" or "commenter"
 
 QUALIFICATION CRITERIA:
-- Expressing a problem/need that the product solves
-- Asking questions about solutions in this space
-- Showing interest in similar products/services
-- Demonstrating authority/decision-making power
-- Engaging meaningfully (not just generic comments)
+✅ Expressing a problem/need that the product solves
+✅ Asking questions about solutions in this space
+✅ Showing interest in similar products/services
+✅ Demonstrating authority/decision-making power (job title, company)
+✅ Budget indicators ("looking to buy", "need a solution", "willing to pay")
+✅ Urgency signals ("ASAP", "urgent", "need quickly")
+✅ Intent signals ("recommendations?", "which tool?", "best option?")
+✅ Pain point mentions (complaints, frustrations, challenges)
+✅ Research behavior (comparing options, asking for advice)
 
 DISQUALIFICATION SIGNS:
-- Generic comments ("Great post!", "Thanks for sharing")
-- Spam or promotional comments
-- Comments from competitors
-- Clearly irrelevant to the product
+❌ Generic comments ("Great post!", "Thanks for sharing")
+❌ Spam or promotional comments
+❌ Comments from competitors
+❌ Clearly irrelevant to the product
+❌ Students or job seekers (unless target customer)
 
 Respond in JSON format only."""
     
