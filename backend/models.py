@@ -334,3 +334,39 @@ class UserPreferencesResponse(BaseModel):
     competitor_domains: List[str]
     created_at: datetime
     updated_at: datetime
+
+
+# RapidAPI Key Management
+class RapidAPIKey(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str  # Friendly name for the key (e.g., "Primary Key", "Backup Key 1")
+    api_key: str  # The actual RapidAPI key
+    is_active: bool = True
+    usage_count: int = 0  # Track how many times this key has been used
+    last_used: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_by: str  # User ID of admin who created it
+    notes: Optional[str] = None  # Optional notes about this key
+
+
+class RapidAPIKeyCreate(BaseModel):
+    name: str
+    api_key: str
+    notes: Optional[str] = None
+
+
+class RapidAPIKeyResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str
+    name: str
+    api_key: str  # In production, you might want to mask this
+    is_active: bool
+    usage_count: int
+    last_used: Optional[datetime]
+    created_at: datetime
+    created_by: str
+    notes: Optional[str]
+
