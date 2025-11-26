@@ -304,6 +304,8 @@ class UserPreferencesCreate(BaseModel):
     auto_generate_content: Optional[bool] = None
     include_competitor_analysis: Optional[bool] = None
     competitor_domains: Optional[List[str]] = None
+    extracted_keywords: Optional[List[str]] = None
+    analyzed_urls: Optional[List[Dict[str, Any]]] = None
 
 
 class UserPreferencesResponse(BaseModel):
