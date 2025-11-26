@@ -280,6 +280,16 @@ class UserPreferences(BaseModel):
     include_competitor_analysis: bool = True
     competitor_domains: List[str] = Field(default_factory=list)  # e.g., ["apollo.io", "hunter.io"]
     
+    # Lead Generation - Product/Service Profile
+    enable_lead_identification: bool = True  # Enable automatic lead identification
+    product_name: str = ""  # e.g., "EmailVerify Pro"
+    product_description: str = ""  # Brief description of the product
+    target_customer_profile: str = ""  # e.g., "B2B SaaS founders, Marketing teams"
+    key_problems_solved: List[str] = Field(default_factory=list)  # e.g., ["reduces bounce rates", "verifies emails"]
+    buying_signals: List[str] = Field(default_factory=list)  # e.g., ["need email verification", "looking for lead tool"]
+    competitive_advantages: List[str] = Field(default_factory=list)  # What makes your product unique
+    min_lead_score: float = 40.0  # Minimum score to qualify as lead
+    
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
