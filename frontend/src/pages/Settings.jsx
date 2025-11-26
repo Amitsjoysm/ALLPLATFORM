@@ -377,6 +377,16 @@ const Settings = () => {
             </div>
           </div>
 
+          {/* Smart Keyword Discovery */}
+          <SmartKeywordDiscovery 
+            onKeywordsExtracted={(keywords, metadata) => {
+              setFormData(prev => ({
+                ...prev,
+                target_keywords: [...new Set([...prev.target_keywords, ...keywords])]
+              }));
+            }}
+          />
+
           {/* Scan Frequency */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4 text-gray-900">⏰ Scan Frequency</h2>
