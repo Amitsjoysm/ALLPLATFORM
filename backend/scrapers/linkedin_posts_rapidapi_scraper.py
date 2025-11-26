@@ -15,6 +15,7 @@ class LinkedInPostsRapidAPIScraper(BaseScraper):
         super().__init__(channel_id, "LinkedIn Posts (RapidAPI)")
         self.keywords = keywords
         self.api_url = "https://linkedin-scraper-api-real-time-fast-affordable.p.rapidapi.com/posts/search"
+        self.comments_api_url = "https://linkedin-scraper-api-real-time-fast-affordable.p.rapidapi.com/post/comments"
         self.api_host = "linkedin-scraper-api-real-time-fast-affordable.p.rapidapi.com"
     
     async def get_active_api_keys(self) -> List[Dict[str, Any]]:
