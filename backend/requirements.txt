@@ -47,3 +47,4 @@ prompt-toolkit==3.0.43
 limits==3.13.0
 deprecated
 importlib-resources
+wcwidth==0.2.14
