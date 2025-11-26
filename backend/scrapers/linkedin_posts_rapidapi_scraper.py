@@ -47,9 +47,56 @@ class LinkedInPostsRapidAPIScraper(BaseScraper):
         except Exception as e:
             logger.error(f"Error updating key usage: {e}")
     
-    async def scrape_with_key(self, api_key: str, key_id: str, keyword: str) -> List[Dict[str, Any]]:
-        """Scrape LinkedIn posts using a specific API key"""
+    async def fetch_post_comments(self, post_urn: str, api_key: str, max_comments: int = 20) -> List[Dict[str, Any]]:
+        """Fetch comments for a specific post"""
+        try:
+            headers = {
+                "x-rapidapi-key": api_key,
+                "x-rapidapi-host": self.api_host
+            }
+            
+            params = {
+                "post_urn": post_urn,
+                "start": "0"
+            }
+            
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(self.comments_api_url, headers=headers, params=params)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    comments_data = data.get("data", []) if isinstance(data, dict) else []
+                    
+                    comments = []
+                    for comment in comments_data[:max_comments]:
+                        try:
+                            comments.append({
+                                "text": comment.get("text", "") or comment.get("comment", ""),
+                                "author": {
+                                    "name": comment.get("author", {}).get("name", "Unknown"),
+                                    "url": comment.get("author", {}).get("profile_url", "") or comment.get("author", {}).get("url", ""),
+                                    "headline": comment.get("author", {}).get("headline", "")
+                                },
+                                "timestamp": comment.get("created_at", "") or comment.get("timestamp", "")
+                            })
+                        except Exception as e:
+                            logger.debug(f"Error parsing comment: {e}")
+                    
+                    return comments
+                    
+        except Exception as e:
+            logger.debug(f"Error fetching comments for post {post_urn}: {e}")
+        
+        return []
+    
+    async def scrape_with_key(self, api_key: str, key_id: str, keyword: str, fetch_comments: bool = True) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        """Scrape LinkedIn posts using a specific API key
+        
+        Returns:
+            Tuple of (signals, posts_with_comments)
+        """
         signals = []
+        posts_with_comments = []
         
         try:
             headers = {
@@ -81,8 +128,11 @@ class LinkedInPostsRapidAPIScraper(BaseScraper):
                             # Extract post data - adjust field names based on actual API response
                             post_text = post.get("text", "") or post.get("content", "")
                             post_url = post.get("url", "") or post.get("link", "")
+                            post_urn = post.get("urn", "") or post.get("post_id", "")
                             author = post.get("author", {})
                             author_name = author.get("name", "Unknown") if isinstance(author, dict) else str(author)
+                            author_url = author.get("profile_url", "") or author.get("url", "") if isinstance(author, dict) else ""
+                            author_headline = author.get("headline", "") if isinstance(author, dict) else ""
                             
                             # Combine title and content
                             content = f"LinkedIn Post by {author_name}\n\n{post_text[:500]}"
@@ -94,10 +144,35 @@ class LinkedInPostsRapidAPIScraper(BaseScraper):
                                     "keyword": keyword,
                                     "platform": "linkedin_rapidapi",
                                     "author": author_name,
-                                    "source": "rapidapi"
+                                    "source": "rapidapi",
+                                    "post_urn": post_urn
                                 }
                             )
                             signals.append(signal)
+                            
+                            # Fetch comments for lead identification
+                            comments = []
+                            if fetch_comments and post_urn:
+                                comments = await self.fetch_post_comments(post_urn, api_key)
+                                await asyncio.sleep(1)  # Rate limiting
+                            
+                            # Store post with comments for lead identification
+                            posts_with_comments.append({
+                                "post": {
+                                    "title": post_text[:100] if post_text else "",
+                                    "content": post_text,
+                                    "url": post_url,
+                                    "urn": post_urn,
+                                    "author": {
+                                        "name": author_name,
+                                        "url": author_url,
+                                        "headline": author_headline
+                                    },
+                                    "keyword": keyword
+                                },
+                                "comments": comments
+                            })
+                            
                         except Exception as e:
                             logger.debug(f"Error parsing LinkedIn post: {e}")
                     
@@ -110,7 +185,7 @@ class LinkedInPostsRapidAPIScraper(BaseScraper):
         except Exception as e:
             logger.error(f"Error scraping LinkedIn with RapidAPI for keyword '{keyword}': {e}")
         
-        return signals
+        return signals, posts_with_comments
     
     async def scrape(self) -> List[Dict[str, Any]]:
         """Main scrape method that uses API key pool"""
