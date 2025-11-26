@@ -175,9 +175,17 @@ export const Dashboard = () => {
               Welcome back, {user.email}! Here are your personalized recommendations.
             </p>
           </div>
-          <Button
-            onClick={() => window.location.href = '/settings'}
-            variant="outline"
+          <div className="flex gap-3">
+            <Button
+              onClick={() => window.location.href = '/leads'}
+              variant="outline"
+              className="bg-blue-600 text-white hover:bg-blue-700"
+            >
+              View Leads
+            </Button>
+            <Button
+              onClick={() => window.location.href = '/settings'}
+              variant="outline"
             className="flex items-center gap-2"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
