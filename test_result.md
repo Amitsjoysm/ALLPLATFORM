@@ -356,6 +356,30 @@ backend:
       - working: "NA"
         agent: "main"
         comment: "Updated create_user_recommendations() to merge extracted_keywords with target_keywords when filtering opportunities. Now both manual keywords and AI-extracted keywords are used for opportunity matching. Needs testing."
+  
+  - task: "Lead Identification System - Backend"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/celery_tasks.py, /app/backend/agents/linkedin_lead_identifier_agent.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Lead identification system complete: LinkedInLeadIdentifierAgent analyzes post authors and commenters, LinkedInPostsRapidAPIScraper fetches posts with comments, celery task identify_linkedin_leads processes leads hourly, stores in database with quality scoring. Updated RapidAPI scraper to use post_url parameter (instead of post_urn) and sort_order='Most relevant' as per API spec. Needs testing."
+  
+  - task: "RapidAPI Integration - Correct Endpoints"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/scrapers/linkedin_posts_rapidapi_scraper.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Updated LinkedIn scraper to use correct RapidAPI parameters: POST comments endpoint uses post_url and sort_order='Most relevant', POST search endpoint uses keyword, page_number, sort_type='date_posted'. Matches user's provided API examples exactly. Needs testing with actual API keys."
 
 frontend:
   - task: "User Dashboard"
