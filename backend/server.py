@@ -591,6 +591,157 @@ async def reset_user_preferences(
     return {"message": "Preferences reset to defaults"}
 
 
+# ============= SMART KEYWORD DISCOVERY =============
+
+@api_router.post("/extract-keywords")
+@limiter.limit("10/hour")
+async def extract_keywords_from_url(
+    request: Request,
+    url_data: dict,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: User = Depends(get_current_user())
+):
+    """Extract keywords from URL using AI"""
+    try:
+        url = url_data.get('url', '').strip()
+        if not url:
+            raise HTTPException(status_code=400, detail="URL is required")
+        
+        # Initialize extractor
+        from services import URLKeywordExtractor
+        extractor = URLKeywordExtractor()
+        
+        # Extract keywords
+        result = await extractor.extract_keywords(url)
+        
+        logger.info(f"Extracted {len(result['extracted_keywords'])} keywords from {url} for user {current_user.email}")
+        
+        return {
+            "success": True,
+            "url": result['url'],
+            "keywords": result['extracted_keywords'],
+            "industry": result['industry'],
+            "niche": result['niche'],
+            "business_type": result['business_type'],
+            "target_audience": result['target_audience'],
+            "problems_solving": result['problems_solving']
+        }
+    
+    except Exception as e:
+        logger.error(f"Error extracting keywords: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/analyze-seo")
+@limiter.limit("5/hour")
+async def analyze_seo(
+    request: Request,
+    url_data: dict,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: User = Depends(get_current_user())
+):
+    """Comprehensive SEO analysis with recommendations"""
+    try:
+        url = url_data.get('url', '').strip()
+        if not url:
+            raise HTTPException(status_code=400, detail="URL is required")
+        
+        # Initialize extractor
+        from services import URLKeywordExtractor
+        extractor = URLKeywordExtractor()
+        
+        # Analyze SEO
+        result = await extractor.analyze_seo(url)
+        
+        logger.info(f"SEO analysis completed for {url}, score: {result['seo_score']}, user: {current_user.email}")
+        
+        return {
+            "success": True,
+            "url": result['url'],
+            "seo_score": result['seo_score'],
+            "issues": result['issues'],
+            "warnings": result['warnings'],
+            "good_practices": result['good_practices'],
+            "content_gaps": result['content_gaps'],
+            "keyword_opportunities": result['keyword_opportunities'],
+            "content_suggestions": result['content_suggestions'],
+            "technical_recommendations": result['technical_recommendations'],
+            "traffic_strategies": result['traffic_strategies'],
+            "metadata": result['metadata']
+        }
+    
+    except Exception as e:
+        logger.error(f"Error analyzing SEO: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/save-extracted-keywords")
+async def save_extracted_keywords(
+    keyword_data: dict,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: User = Depends(get_current_user())
+):
+    """Save extracted keywords to user preferences"""
+    try:
+        keywords = keyword_data.get('keywords', [])
+        url = keyword_data.get('url', '')
+        metadata = keyword_data.get('metadata', {})
+        
+        if not keywords:
+            raise HTTPException(status_code=400, detail="No keywords provided")
+        
+        # Get existing preferences
+        prefs = await db.user_preferences.find_one({"user_id": current_user.id}, {"_id": 0})
+        
+        if not prefs:
+            # Create default if not exists
+            from models import UserPreferences
+            prefs = UserPreferences(user_id=current_user.id).model_dump()
+        
+        # Add new keywords to extracted_keywords
+        existing_extracted = set(prefs.get('extracted_keywords', []))
+        existing_extracted.update(keywords)
+        
+        # Also merge with target_keywords
+        existing_target = set(prefs.get('target_keywords', []))
+        existing_target.update(keywords)
+        
+        # Track analyzed URL
+        analyzed_urls = prefs.get('analyzed_urls', [])
+        analyzed_urls.append({
+            'url': url,
+            'analyzed_at': datetime.now(timezone.utc).isoformat(),
+            'keywords_count': len(keywords),
+            'metadata': metadata
+        })
+        
+        # Update preferences
+        await db.user_preferences.update_one(
+            {"user_id": current_user.id},
+            {
+                "$set": {
+                    "extracted_keywords": list(existing_extracted),
+                    "target_keywords": list(existing_target),
+                    "analyzed_urls": analyzed_urls,
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }
+            },
+            upsert=True
+        )
+        
+        logger.info(f"Saved {len(keywords)} extracted keywords for user {current_user.email}")
+        
+        return {
+            "success": True,
+            "message": f"Added {len(keywords)} keywords to your preferences",
+            "total_keywords": len(existing_target)
+        }
+    
+    except Exception as e:
+        logger.error(f"Error saving keywords: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ============= HEALTH CHECK =============
 
 @api_router.get("/health")
