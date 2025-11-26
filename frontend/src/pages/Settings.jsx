@@ -621,4 +621,321 @@ const Settings = () => {
   );
 };
 
+// Smart Keyword Discovery Component
+const SmartKeywordDiscovery = ({ onKeywordsExtracted }) => {
+  const [url, setUrl] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [extractedData, setExtractedData] = useState(null);
+  const [seoData, setSeoData] = useState(null);
+  const [selectedKeywords, setSelectedKeywords] = useState([]);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const handleExtractKeywords = async () => {
+    if (!url.trim()) {
+      setError('Please enter a URL');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setExtractedData(null);
+    setSeoData(null);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `${API_URL}/api/extract-keywords`,
+        { url: url.trim() },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        setExtractedData(response.data);
+        setSelectedKeywords(response.data.keywords || []);
+        setSuccess('Keywords extracted successfully!');
+        setTimeout(() => setSuccess(''), 3000);
+      }
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to extract keywords');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAnalyzeSEO = async () => {
+    if (!url.trim()) {
+      setError('Please enter a URL');
+      return;
+    }
+
+    setAnalyzing(true);
+    setError('');
+    setSeoData(null);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `${API_URL}/api/analyze-seo`,
+        { url: url.trim() },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        setSeoData(response.data);
+        setSuccess('SEO analysis completed!');
+        setTimeout(() => setSuccess(''), 3000);
+      }
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to analyze SEO');
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const handleApproveKeywords = async () => {
+    if (selectedKeywords.length === 0) {
+      setError('No keywords selected');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `${API_URL}/api/save-extracted-keywords`,
+        {
+          keywords: selectedKeywords,
+          url: url,
+          metadata: {
+            industry: extractedData?.industry,
+            niche: extractedData?.niche,
+            business_type: extractedData?.business_type
+          }
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      onKeywordsExtracted(selectedKeywords, {
+        industry: extractedData?.industry,
+        niche: extractedData?.niche
+      });
+
+      setSuccess(`Added ${selectedKeywords.length} keywords to your preferences!`);
+      setTimeout(() => {
+        setSuccess('');
+        setExtractedData(null);
+        setUrl('');
+        setSelectedKeywords([]);
+      }, 2000);
+    } catch (err) {
+      setError('Failed to save keywords');
+    }
+  };
+
+  const toggleKeyword = (keyword) => {
+    setSelectedKeywords(prev =>
+      prev.includes(keyword)
+        ? prev.filter(k => k !== keyword)
+        : [...prev, keyword]
+    );
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <h2 className="text-xl font-semibold mb-4 text-gray-900">🚀 Smart Keyword Discovery</h2>
+      <p className="text-gray-600 mb-4">
+        Automatically extract keywords from your website, social profiles, or competitor URLs
+      </p>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-lg">
+          {success}
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {/* URL Input */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Website or Social Media URL
+          </label>
+          <div className="flex space-x-2">
+            <input
+              type="text"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://example.com or instagram.com/username"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              onClick={handleExtractKeywords}
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 whitespace-nowrap"
+            >
+              {loading ? 'Extracting...' : 'Extract Keywords'}
+            </button>
+            <button
+              onClick={handleAnalyzeSEO}
+              disabled={analyzing}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 whitespace-nowrap"
+            >
+              {analyzing ? 'Analyzing...' : 'SEO Analysis'}
+            </button>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            Supports: Websites, Instagram, LinkedIn, Facebook, Twitter, YouTube
+          </p>
+        </div>
+
+        {/* Extracted Keywords */}
+        {extractedData && (
+          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+            <h3 className="font-semibold text-gray-900 mb-3">Extracted Keywords ({extractedData.keywords?.length || 0})</h3>
+            
+            {extractedData.industry && (
+              <p className="text-sm text-gray-600 mb-2">
+                <strong>Industry:</strong> {extractedData.industry}
+              </p>
+            )}
+            
+            {extractedData.niche && (
+              <p className="text-sm text-gray-600 mb-2">
+                <strong>Niche:</strong> {extractedData.niche}
+              </p>
+            )}
+
+            {extractedData.business_type && (
+              <p className="text-sm text-gray-600 mb-3">
+                <strong>Type:</strong> {extractedData.business_type}
+              </p>
+            )}
+
+            <div className="flex flex-wrap gap-2 mb-4">
+              {extractedData.keywords?.map((keyword, index) => (
+                <label
+                  key={index}
+                  className={`px-3 py-1 rounded-full text-sm cursor-pointer transition-colors ${
+                    selectedKeywords.includes(keyword)
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedKeywords.includes(keyword)}
+                    onChange={() => toggleKeyword(keyword)}
+                    className="hidden"
+                  />
+                  {keyword}
+                </label>
+              ))}
+            </div>
+
+            <button
+              onClick={handleApproveKeywords}
+              disabled={selectedKeywords.length === 0}
+              className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+            >
+              Add {selectedKeywords.length} Selected Keywords
+            </button>
+          </div>
+        )}
+
+        {/* SEO Analysis Results */}
+        {seoData && (
+          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-gray-900">SEO Analysis</h3>
+              <div className="text-2xl font-bold text-blue-600">
+                {seoData.seo_score}/100
+              </div>
+            </div>
+
+            {/* Issues */}
+            {seoData.issues?.length > 0 && (
+              <div className="mb-3">
+                <h4 className="text-sm font-semibold text-red-700 mb-2">🔴 Critical Issues</h4>
+                <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                  {seoData.issues.map((issue, i) => (
+                    <li key={i}>{issue}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Warnings */}
+            {seoData.warnings?.length > 0 && (
+              <div className="mb-3">
+                <h4 className="text-sm font-semibold text-yellow-700 mb-2">⚠️ Warnings</h4>
+                <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                  {seoData.warnings.map((warning, i) => (
+                    <li key={i}>{warning}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Good Practices */}
+            {seoData.good_practices?.length > 0 && (
+              <div className="mb-3">
+                <h4 className="text-sm font-semibold text-green-700 mb-2">✅ Good Practices</h4>
+                <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                  {seoData.good_practices.map((practice, i) => (
+                    <li key={i}>{practice}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Traffic Strategies */}
+            {seoData.traffic_strategies?.length > 0 && (
+              <div className="mb-3">
+                <h4 className="text-sm font-semibold text-purple-700 mb-2">📈 Traffic Growth Strategies</h4>
+                <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                  {seoData.traffic_strategies.map((strategy, i) => (
+                    <li key={i}>{strategy}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Keyword Opportunities */}
+            {seoData.keyword_opportunities?.length > 0 && (
+              <div className="mb-3">
+                <h4 className="text-sm font-semibold text-blue-700 mb-2">🔑 Keyword Opportunities</h4>
+                <div className="flex flex-wrap gap-2">
+                  {seoData.keyword_opportunities.map((keyword, i) => (
+                    <span key={i} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                      {keyword}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Content Suggestions */}
+            {seoData.content_suggestions?.length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold text-indigo-700 mb-2">💡 Content Suggestions</h4>
+                <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                  {seoData.content_suggestions.map((suggestion, i) => (
+                    <li key={i}>{suggestion}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default Settings;
