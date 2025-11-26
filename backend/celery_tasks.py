@@ -162,7 +162,12 @@ async def create_user_recommendations(db, opportunities: list):
             min_score = prefs.get("min_opportunity_score", 50.0)
             enabled_types = prefs.get("enabled_opportunity_types", [])
             max_daily = prefs.get("max_opportunities_per_day", 50)
+            
+            # Merge manual and extracted keywords for comprehensive scanning
             target_keywords = prefs.get("target_keywords", [])
+            extracted_keywords = prefs.get("extracted_keywords", [])
+            all_keywords = list(set(target_keywords + extracted_keywords))  # Combine and deduplicate
+            
             exclude_keywords = prefs.get("exclude_keywords", [])
             
             # Filter opportunities based on user preferences
