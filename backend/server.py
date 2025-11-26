@@ -13,7 +13,8 @@ from config import settings
 from models import (
     User, UserCreate, UserLogin, UserResponse, Token, UserRole, PlanType,
     OpportunityResponse, OpportunityStatus, RecommendationResponse,
-    Channel, APIToken, UserPreferences, UserPreferencesCreate, UserPreferencesResponse
+    Channel, APIToken, UserPreferences, UserPreferencesCreate, UserPreferencesResponse,
+    RapidAPIKey, RapidAPIKeyCreate, RapidAPIKeyResponse
 )
 from auth import (
     get_password_hash, verify_password, create_access_token,
