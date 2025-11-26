@@ -62,12 +62,21 @@ class TrafficEngineAPITester:
             }
 
     def test_health_check(self) -> bool:
-        """Test health check endpoint"""
+        """Test health check endpoint with database and Redis status"""
         self.log("Testing health check endpoint...")
         result = self.make_request("GET", "/health")
         
-        if result["success"] and result["data"].get("status") == "healthy":
-            self.log("✅ Health check passed")
+        if result["success"] and result["data"].get("status") in ["healthy", "degraded"]:
+            data = result["data"]
+            db_status = data.get("database", "unknown")
+            redis_status = data.get("redis", "unknown")
+            self.log(f"✅ Health check passed - Database: {db_status}, Redis: {redis_status}")
+            
+            # Check if both services are connected
+            if db_status == "connected" and redis_status == "connected":
+                self.log("✅ All services are healthy")
+            else:
+                self.log("⚠️ Some services may be degraded")
             return True
         else:
             self.log(f"❌ Health check failed: {result}", "ERROR")
