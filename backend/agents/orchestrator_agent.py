@@ -35,7 +35,7 @@ class OrchestratorAgent(BaseAgent):
             elif platform == "twitter":
                 from agents.twitter_agent import TwitterAgent
                 self._platform_agents[platform] = TwitterAgent()
-            elif platform == "linkedin":
+            elif platform == "linkedin" or platform == "linkedin_rapidapi":
                 from agents.linkedin_agent import LinkedInAgent
                 self._platform_agents[platform] = LinkedInAgent()
             elif platform == "youtube":
