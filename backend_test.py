@@ -601,13 +601,38 @@ class TrafficEngineAPITester:
         test_results["opportunities_filtered"] = self.test_opportunities_filtered()
         test_results["recommendations_list"] = self.test_recommendations_list()
         
+        # User Preferences System tests (NEW)
+        self.log("\n" + "=" * 40)
+        self.log("TESTING USER PREFERENCES SYSTEM")
+        self.log("=" * 40)
+        test_results["preferences_get_defaults"] = self.test_preferences_get_defaults()
+        test_results["preferences_update"] = self.test_preferences_update()
+        test_results["preferences_get_updated"] = self.test_preferences_get_updated()
+        test_results["preferences_reset"] = self.test_preferences_reset()
+        test_results["preferences_get_after_reset"] = self.test_preferences_get_after_reset()
+        test_results["preferences_unauthorized"] = self.test_preferences_unauthorized()
+        
+        # API Token Management tests (NEW)
+        self.log("\n" + "=" * 40)
+        self.log("TESTING API TOKEN MANAGEMENT")
+        self.log("=" * 40)
+        test_results["api_token_generation"] = self.test_api_token_generation()
+        test_results["api_token_list"] = self.test_api_token_list()
+        test_results["api_token_revoke"] = self.test_api_token_revoke()
+        
         # Admin tests
+        self.log("\n" + "=" * 40)
+        self.log("TESTING ADMIN ENDPOINTS")
+        self.log("=" * 40)
         test_results["admin_stats"] = self.test_admin_stats()
         test_results["admin_users"] = self.test_admin_users()
         test_results["admin_channels"] = self.test_admin_channels()
         test_results["admin_trigger_scan"] = self.test_admin_trigger_scan()
         
         # Security tests
+        self.log("\n" + "=" * 40)
+        self.log("TESTING SECURITY & AUTHORIZATION")
+        self.log("=" * 40)
         test_results["unauthorized_access"] = self.test_unauthorized_access()
         test_results["user_accessing_admin"] = self.test_user_accessing_admin()
         
