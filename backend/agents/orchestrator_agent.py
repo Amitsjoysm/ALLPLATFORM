@@ -117,6 +117,8 @@ class OrchestratorAgent(BaseAgent):
                 "user_intent": classification["user_intent_score"],
                 "suggested_action": classification["suggested_action"],
                 "content_template": content_template,
+                "signal_content": signal_data.get("content", signal_data.get("title", "")),
+                "signal_link": signal_data.get("link", signal_data.get("url", "")),
                 "meta": {
                     "key_topics": classification.get("key_topics", []),
                     "reasoning": classification.get("reasoning", ""),
