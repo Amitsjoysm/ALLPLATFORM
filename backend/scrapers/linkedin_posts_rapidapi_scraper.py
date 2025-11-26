@@ -85,7 +85,7 @@ class LinkedInPostsRapidAPIScraper(BaseScraper):
                     return comments
                     
         except Exception as e:
-            logger.debug(f"Error fetching comments for post {post_urn}: {e}")
+            logger.debug(f"Error fetching comments for post {post_url}: {e}")
         
         return []
     
