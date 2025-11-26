@@ -378,6 +378,9 @@ metadata:
 
 test_plan:
   current_focus:
+    - "User Preferences System - Backend"
+    - "Smart Recommendation Filtering"
+    - "Settings/Preferences Page - Frontend"
     - "Enhanced LLM Reliability Layer"
     - "API Token Authentication"
     - "Rate Limiting & Security Middleware"
@@ -385,7 +388,6 @@ test_plan:
     - "Enhanced Health Check"
     - "New Scrapers Implementation"
     - "Traffic Business Logic Rules Engine"
-    - "Light Theme UI"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
