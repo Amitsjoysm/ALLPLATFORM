@@ -330,10 +330,14 @@ metadata:
 
 test_plan:
   current_focus:
+    - "Enhanced LLM Reliability Layer"
+    - "API Token Authentication"
+    - "Rate Limiting & Security Middleware"
+    - "Celery Worker & Beat Setup"
+    - "Enhanced Health Check"
     - "New Scrapers Implementation"
     - "Traffic Business Logic Rules Engine"
-    - "Enhanced Orchestrator Agent"
-    - "Celery Tasks with All Scrapers"
+    - "Light Theme UI"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
