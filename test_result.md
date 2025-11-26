@@ -528,3 +528,47 @@ agent_communication:
        - No emergent-integrations dependency
     
     Ready for comprehensive backend testing!"
+  - agent: "main"
+    message: "SMART KEYWORD DISCOVERY FEATURE IMPLEMENTED - Automatic keyword extraction from URLs:
+    
+    ✅ Backend Service (URLKeywordExtractor):
+       - fetch_url_content() - Fetches and parses any URL (websites, social media)
+       - extract_keywords() - AI-powered keyword extraction using Groq
+       - analyze_seo() - Comprehensive SEO analysis with actionable recommendations
+       - Supports: Websites, Instagram, LinkedIn, Facebook, Twitter, YouTube
+    
+    ✅ API Endpoints:
+       - POST /api/extract-keywords (Rate: 10/hour) - Extract keywords from URL
+       - POST /api/analyze-seo (Rate: 5/hour) - Full SEO audit
+       - POST /api/save-extracted-keywords - Save to user preferences
+       - All endpoints JWT-protected
+    
+    ✅ Data Models:
+       - Added extracted_keywords field to UserPreferences
+       - Added analyzed_urls field to track URL analysis history
+       - Merged with existing target_keywords in recommendation filtering
+    
+    ✅ Frontend UI (Settings Page):
+       - New 'Smart Keyword Discovery' section
+       - URL input for any website or social profile
+       - Extract Keywords button with AI processing
+       - SEO Analysis button with comprehensive audit
+       - Interactive keyword selection (click to toggle)
+       - SEO results display: score, issues, warnings, recommendations
+       - Traffic growth strategies
+       - Content suggestions
+       - One-click approval to add keywords
+    
+    ✅ Integration:
+       - Extracted keywords automatically merged with manual keywords
+       - Used in opportunity scanning across all platforms
+       - Celery tasks updated to use combined keyword list
+    
+    ✅ How It Works:
+       1. User enters website/social media URL
+       2. AI analyzes content and extracts relevant keywords
+       3. User reviews and selects keywords
+       4. Keywords saved to preferences
+       5. Opportunities automatically found based on extracted keywords
+    
+    Ready for testing! This feature enables users to automatically discover keywords from their own site or competitor sites, dramatically improving opportunity discovery.""
