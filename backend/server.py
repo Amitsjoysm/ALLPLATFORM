@@ -85,7 +85,8 @@ async def get_db():
 # ============= AUTH ENDPOINTS =============
 
 @api_router.post("/auth/register", response_model=Token)
-async def register(user_data: UserCreate, db: AsyncIOMotorDatabase = Depends(get_db)):
+@limiter.limit("10/hour")
+async def register(request: Request, user_data: UserCreate, db: AsyncIOMotorDatabase = Depends(get_db)):
     # Check if user exists
     existing = await db.users.find_one({"email": user_data.email})
     if existing:
