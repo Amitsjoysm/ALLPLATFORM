@@ -225,6 +225,57 @@ const Settings = () => {
     }));
   };
 
+  const addProblem = () => {
+    if (problemInput.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        key_problems_solved: [...prev.key_problems_solved, problemInput.trim()]
+      }));
+      setProblemInput('');
+    }
+  };
+
+  const removeProblem = (problem) => {
+    setFormData(prev => ({
+      ...prev,
+      key_problems_solved: prev.key_problems_solved.filter(p => p !== problem)
+    }));
+  };
+
+  const addSignal = () => {
+    if (signalInput.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        buying_signals: [...prev.buying_signals, signalInput.trim()]
+      }));
+      setSignalInput('');
+    }
+  };
+
+  const removeSignal = (signal) => {
+    setFormData(prev => ({
+      ...prev,
+      buying_signals: prev.buying_signals.filter(s => s !== signal)
+    }));
+  };
+
+  const addAdvantage = () => {
+    if (advantageInput.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        competitive_advantages: [...prev.competitive_advantages, advantageInput.trim()]
+      }));
+      setAdvantageInput('');
+    }
+  };
+
+  const removeAdvantage = (advantage) => {
+    setFormData(prev => ({
+      ...prev,
+      competitive_advantages: prev.competitive_advantages.filter(a => a !== advantage)
+    }));
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
