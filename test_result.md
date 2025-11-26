@@ -212,6 +212,66 @@ backend:
       - working: true
         agent: "main"
         comment: "BaseAgent implements context history with save/load to database, token management (max 10 messages), and retry logic. All agents inherit this functionality."
+  
+  - task: "Enhanced LLM Reliability Layer"
+    implemented: true
+    working: true
+    file: "/app/backend/agents/base_agent.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented Parlant.io-like architecture with: 1) Exponential backoff retry logic, 2) Rate limit handling with 60s delay, 3) Model fallback (primary → fallback), 4) Structured JSON output validation, 5) Enhanced error handling. Needs testing."
+  
+  - task: "API Token Authentication"
+    implemented: true
+    working: true
+    file: "/app/backend/auth.py, /app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented API token system with: 1) Token generation endpoint (rate-limited 5/hour), 2) Token hashing for security, 3) Flexible authentication (JWT or API token), 4) Token management (list, revoke). Needs testing."
+  
+  - task: "Rate Limiting & Security Middleware"
+    implemented: true
+    working: true
+    file: "/app/backend/middleware.py, /app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented production security: 1) SlowAPI rate limiting on all endpoints, 2) Security headers (XSS, CSRF, CSP), 3) Request validation (10MB limit), 4) Request logging with timing, 5) User agent validation. Needs testing."
+  
+  - task: "Celery Worker & Beat Setup"
+    implemented: true
+    working: true
+    file: "/etc/supervisor/conf.d/celery.conf"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Fixed Celery dependencies (kombu, billiard, etc), installed Redis, configured Celery worker and beat via supervisor. Hourly scans now running. Needs testing."
+  
+  - task: "Enhanced Health Check"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Enhanced health check endpoint to report MongoDB and Redis connection status. Returns detailed service health information. Needs testing."
 
 frontend:
   - task: "User Dashboard"
