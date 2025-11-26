@@ -535,6 +535,11 @@ async def health_check(db: AsyncIOMotorDatabase = Depends(get_db)):
 # Include router
 app.include_router(api_router)
 
+# Add middleware (order matters - first added is outermost)
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(RequestValidationMiddleware)
+
 # CORS
 app.add_middleware(
     CORSMiddleware,
@@ -542,4 +547,5 @@ app.add_middleware(
     allow_origins=settings.CORS_ORIGINS.split(','),
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Process-Time", "X-RateLimit-Limit", "X-RateLimit-Remaining"]
 )
