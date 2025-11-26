@@ -453,6 +453,30 @@ frontend:
       - working: "NA"
         agent: "main"
         comment: "Created SmartKeywordDiscovery component in Settings page with: 1) URL input field for website/social media URLs, 2) Extract Keywords button - fetches keywords using AI, 3) SEO Analysis button - comprehensive SEO audit, 4) Interactive keyword selection UI (click to toggle), 5) SEO results display with score, issues, warnings, good practices, traffic strategies, keyword opportunities, content suggestions. 6) One-click approval to add keywords to preferences. Supports Instagram, LinkedIn, Facebook, Twitter, YouTube, and any website. Needs testing."
+  
+  - task: "Product Profile Section - Settings Frontend"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/Settings.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added comprehensive Product Profile section to Settings with: enable_lead_identification toggle, product_name, product_description, target_customer_profile, key_problems_solved (tag input), buying_signals (tag input), competitive_advantages (tag input), min_lead_score slider (20-100). Includes help text and info box explaining how lead identification works. Needs testing."
+  
+  - task: "Leads Navigation Links"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/Navbar.jsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added 'Leads' navigation link to main navbar (next to Dashboard) and user dropdown menu. Makes lead dashboard easily accessible. Needs testing."
 
 metadata:
   created_by: "main_agent"
