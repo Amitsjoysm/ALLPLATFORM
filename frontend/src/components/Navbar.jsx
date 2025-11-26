@@ -83,6 +83,15 @@ export const Navbar = () => {
                       <LayoutDashboard className="mr-2 h-4 w-4" />
                       Dashboard
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/leads')} data-testid="menu-leads">
+                      <Users className="mr-2 h-4 w-4" />
+                      Leads
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/settings')} data-testid="menu-settings">
+                      <Settings className="mr-2 h-4 w-4" />
+                      Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout} data-testid="menu-logout">
                       <LogOut className="mr-2 h-4 w-4" />
                       Logout
