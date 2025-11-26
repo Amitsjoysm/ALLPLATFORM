@@ -1,25 +1,36 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
-from groq import Groq
+from typing import List, Dict, Any, Optional, Callable
+from groq import Groq, RateLimitError, APIError
 from config import settings
 from database import get_database
 from datetime import datetime, timezone
 import logging
 import json
+import time
 
 logger = logging.getLogger(__name__)
 
 
 class BaseAgent(ABC):
-    """Base class for all agents following Parlant.io-like architecture"""
+    """Base class for all agents following Parlant.io-like architecture
+    
+    Features:
+    - Automatic retry logic with exponential backoff
+    - Structured output validation
+    - Context memory management with token limits
+    - Fallback mechanisms for API failures
+    - Rate limit handling
+    """
     
     def __init__(self, name: str, model: str = "llama-3.3-70b-versatile"):
         self.name = name
         self.model = model
+        self.fallback_model = "llama3-70b-8192"  # Fallback if primary model fails
         self.client = Groq(api_key=settings.GROQ_API_KEY)
         self.context_history: List[Dict[str, Any]] = []
         self.max_context_messages = 10
         self.max_retries = 3
+        self.rate_limit_retry_delay = 60  # seconds to wait on rate limit
     
     async def save_context(self, db=None):
         """Save agent context to database"""
