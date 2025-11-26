@@ -113,7 +113,8 @@ async def register(request: Request, user_data: UserCreate, db: AsyncIOMotorData
 
 
 @api_router.post("/auth/login", response_model=Token)
-async def login(credentials: UserLogin, db: AsyncIOMotorDatabase = Depends(get_db)):
+@limiter.limit("20/hour")
+async def login(request: Request, credentials: UserLogin, db: AsyncIOMotorDatabase = Depends(get_db)):
     user_doc = await db.users.find_one({"email": credentials.email}, {"_id": 0})
     
     if not user_doc or not verify_password(credentials.password, user_doc["password_hash"]):
