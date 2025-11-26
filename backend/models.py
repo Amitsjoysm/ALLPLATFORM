@@ -186,10 +186,11 @@ class APIToken(BaseModel):
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
-    token: str
+    token_hash: str  # Hashed token for security
     permissions: List[str] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     is_active: bool = True
+    last_used: Optional[datetime] = None
 
 
 class AgentContext(BaseModel):
