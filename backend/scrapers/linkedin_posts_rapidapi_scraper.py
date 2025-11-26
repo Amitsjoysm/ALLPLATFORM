@@ -212,10 +212,11 @@ class LinkedInPostsRapidAPIScraper(BaseScraper):
             current_key = api_keys[key_index % len(api_keys)]
             key_index += 1
             
-            signals = await self.scrape_with_key(
+            signals, _ = await self.scrape_with_key(
                 current_key["api_key"],
                 current_key["id"],
-                keyword
+                keyword,
+                fetch_comments=False  # Don't fetch comments in regular scrape
             )
             all_signals.extend(signals)
             
@@ -224,3 +225,48 @@ class LinkedInPostsRapidAPIScraper(BaseScraper):
         
         logger.info(f"LinkedIn RapidAPI scraper found {len(all_signals)} signals")
         return all_signals
+    
+    async def scrape_with_comments(self) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        """Scrape LinkedIn posts WITH comments for lead identification
+        
+        Returns:
+            Tuple of (signals, posts_with_comments)
+        """
+        all_signals = []
+        all_posts_with_comments = []
+        
+        # Get active API keys
+        api_keys = await self.get_active_api_keys()
+        
+        if not api_keys:
+            logger.warning("No active RapidAPI keys found for LinkedIn scraping")
+            return [], []
+        
+        logger.info(f"Found {len(api_keys)} active RapidAPI keys for lead scraping")
+        
+        # Use keys in rotation
+        key_index = 0
+        
+        for keyword in self.keywords:
+            if not api_keys:
+                logger.warning("No API keys available")
+                break
+            
+            # Get next key in rotation
+            current_key = api_keys[key_index % len(api_keys)]
+            key_index += 1
+            
+            signals, posts_with_comments = await self.scrape_with_key(
+                current_key["api_key"],
+                current_key["id"],
+                keyword,
+                fetch_comments=True  # Fetch comments for lead identification
+            )
+            all_signals.extend(signals)
+            all_posts_with_comments.extend(posts_with_comments)
+            
+            # Rate limiting - wait between requests
+            await asyncio.sleep(2)
+        
+        logger.info(f"LinkedIn RapidAPI scraper found {len(all_signals)} signals and {len(all_posts_with_comments)} posts with comments")
+        return all_signals, all_posts_with_comments
