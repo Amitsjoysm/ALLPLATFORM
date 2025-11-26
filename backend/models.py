@@ -365,6 +365,88 @@ class RapidAPIKeyResponse(BaseModel):
     api_key: str  # In production, you might want to mask this
     is_active: bool
     usage_count: int
+
+
+
+# Lead Management
+class LeadStatus(str, Enum):
+    NEW = "new"
+    CONTACTED = "contacted"
+    QUALIFIED = "qualified"
+    NOT_INTERESTED = "not_interested"
+    CONVERTED = "converted"
+
+
+class LeadQualityScore(str, Enum):
+    HOT = "hot"  # 80-100
+    WARM = "warm"  # 60-79
+    COLD = "cold"  # 40-59
+    UNQUALIFIED = "unqualified"  # <40
+
+
+class Lead(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str  # User who owns this lead
+    
+    # Lead Information
+    name: Optional[str] = None  # Extracted from LinkedIn profile
+    linkedin_url: str  # LinkedIn profile URL
+    comment_text: str  # The comment that qualified them as a lead
+    post_url: str  # URL of the post where comment was found
+    post_content: Optional[str] = None  # Brief content of the post
+    
+    # Classification
+    quality_score: LeadQualityScore = LeadQualityScore.COLD
+    score: float = 0.0  # Numeric score 0-100
+    status: LeadStatus = LeadStatus.NEW
+    
+    # AI Analysis
+    need_identified: str  # What need/problem was identified
+    reason_qualified: str  # Why this person is a qualified lead
+    suggested_approach: Optional[str] = None  # Suggested outreach message/approach
+    
+    # Metadata
+    keywords_matched: List[str] = Field(default_factory=list)  # Keywords that matched
+    source_channel: str = "linkedin_rapidapi"  # Where this lead was found
+    
+    # Engagement tracking
+    contacted_at: Optional[datetime] = None
+    contact_notes: Optional[str] = None
+    
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class LeadResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str
+    user_id: str
+    name: Optional[str]
+    linkedin_url: str
+    comment_text: str
+    post_url: str
+    post_content: Optional[str]
+    quality_score: LeadQualityScore
+    score: float
+    status: LeadStatus
+    need_identified: str
+    reason_qualified: str
+    suggested_approach: Optional[str]
+    keywords_matched: List[str]
+    source_channel: str
+    contacted_at: Optional[datetime]
+    contact_notes: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+
+
+class LeadUpdate(BaseModel):
+    status: Optional[LeadStatus] = None
+    contact_notes: Optional[str] = None
+
     last_used: Optional[datetime]
     created_at: datetime
     created_by: str
