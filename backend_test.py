@@ -10,7 +10,7 @@ import time
 from typing import Dict, Any, Optional
 
 # Backend URL from frontend/.env
-BACKEND_URL = "https://market-scout-47.preview.emergentagent.com/api"
+BACKEND_URL = "https://prod-ready-app-2.preview.emergentagent.com/api"
 
 class TrafficEngineAPITester:
     def __init__(self):
