@@ -86,6 +86,8 @@ async def async_run_hourly_scan():
                     scraper = TwitterScraper(channel_id, config.get("keywords", settings.REDDIT_KEYWORDS[:5]))
                 elif channel_type == "linkedin":
                     scraper = LinkedInScraper(channel_id, config.get("keywords", settings.REDDIT_KEYWORDS[:4]))
+                elif channel_type == "linkedin_rapidapi":
+                    scraper = LinkedInPostsRapidAPIScraper(channel_id, config.get("keywords", settings.REDDIT_KEYWORDS[:4]))
                 elif channel_type == "youtube":
                     scraper = YouTubeScraper(channel_id, config.get("keywords", settings.REDDIT_KEYWORDS[:3]))
                 elif channel_type == "competitor":
