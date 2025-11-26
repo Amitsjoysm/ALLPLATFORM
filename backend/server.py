@@ -1,5 +1,6 @@
-from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, Query
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from contextlib import asynccontextmanager
 import os
@@ -16,8 +17,14 @@ from models import (
 )
 from auth import (
     get_password_hash, verify_password, create_access_token,
-    get_current_user, require_role
+    get_current_user, require_role, generate_api_token, hash_api_token,
+    get_current_user_flexible
 )
+from middleware import (
+    limiter, SecurityHeadersMiddleware, RequestLoggingMiddleware,
+    RequestValidationMiddleware
+)
+from slowapi.errors import RateLimitExceeded
 
 logging.basicConfig(
     level=logging.INFO,
