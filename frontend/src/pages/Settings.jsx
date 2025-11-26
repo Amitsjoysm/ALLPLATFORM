@@ -29,12 +29,24 @@ const Settings = () => {
     max_opportunities_per_day: 50,
     auto_generate_content: true,
     include_competitor_analysis: true,
-    competitor_domains: []
+    competitor_domains: [],
+    // Lead Generation fields
+    enable_lead_identification: true,
+    product_name: '',
+    product_description: '',
+    target_customer_profile: '',
+    key_problems_solved: [],
+    buying_signals: [],
+    competitive_advantages: [],
+    min_lead_score: 40
   });
   
   const [keywordInput, setKeywordInput] = useState('');
   const [excludeKeywordInput, setExcludeKeywordInput] = useState('');
   const [competitorInput, setCompetitorInput] = useState('');
+  const [problemInput, setProblemInput] = useState('');
+  const [signalInput, setSignalInput] = useState('');
+  const [advantageInput, setAdvantageInput] = useState('');
 
   useEffect(() => {
     fetchPreferences();
