@@ -13,6 +13,7 @@ import logging
 import asyncio
 from datetime import datetime, timezone
 import uuid
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
