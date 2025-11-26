@@ -39,6 +39,16 @@ export const Navbar = () => {
                   Dashboard
                 </Link>
                 
+                <Link
+                  to="/leads"
+                  className={`text-sm font-medium hover:text-primary transition-colors ${
+                    location.pathname === '/leads' ? 'text-primary' : ''
+                  }`}
+                  data-testid="nav-leads-link"
+                >
+                  Leads
+                </Link>
+                
                 {isAdmin() && (
                   <Link
                     to="/admin"
