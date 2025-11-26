@@ -8,6 +8,7 @@ import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
 import Settings from './pages/Settings';
+import Leads from './pages/Leads';
 import { isAuthenticated, isAdmin } from './utils/auth';
 import './App.css';
 
