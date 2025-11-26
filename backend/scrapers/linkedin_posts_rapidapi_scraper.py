@@ -47,7 +47,7 @@ class LinkedInPostsRapidAPIScraper(BaseScraper):
         except Exception as e:
             logger.error(f"Error updating key usage: {e}")
     
-    async def fetch_post_comments(self, post_urn: str, api_key: str, max_comments: int = 20) -> List[Dict[str, Any]]:
+    async def fetch_post_comments(self, post_url: str, api_key: str, max_comments: int = 20) -> List[Dict[str, Any]]:
         """Fetch comments for a specific post"""
         try:
             headers = {
@@ -56,8 +56,8 @@ class LinkedInPostsRapidAPIScraper(BaseScraper):
             }
             
             params = {
-                "post_urn": post_urn,
-                "start": "0"
+                "post_url": post_url,
+                "sort_order": "Most relevant"
             }
             
             async with httpx.AsyncClient(timeout=30.0) as client:
