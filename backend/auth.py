@@ -79,3 +79,72 @@ def require_role(required_roles: list[UserRole]):
             )
         return user
     return role_checker
+
+
+def generate_api_token() -> str:
+    """Generate a secure API token"""
+    return secrets.token_urlsafe(32)
+
+
+def hash_api_token(token: str) -> str:
+    """Hash API token for storage"""
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+async def get_current_user_from_api_token(
+    x_api_token: Optional[str] = Header(None),
+    db = Depends(lambda: __import__('database').get_database())
+) -> User:
+    """Authenticate user via API token"""
+    if not x_api_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API token required",
+            headers={"WWW-Authenticate": "ApiToken"}
+        )
+    
+    # Hash the provided token
+    token_hash = hash_api_token(x_api_token)
+    
+    # Find token in database
+    token_doc = await db.api_tokens.find_one({
+        "token_hash": token_hash,
+        "is_active": True
+    }, {"_id": 0})
+    
+    if not token_doc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or inactive API token"
+        )
+    
+    # Get user
+    user_doc = await db.users.find_one({"id": token_doc["user_id"]}, {"_id": 0})
+    if not user_doc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found"
+        )
+    
+    return User(**user_doc)
+
+
+async def get_current_user_flexible(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    x_api_token: Optional[str] = Header(None),
+    db = Depends(lambda: __import__('database').get_database())
+) -> User:
+    """Authenticate user via JWT or API token"""
+    # Try API token first
+    if x_api_token:
+        return await get_current_user_from_api_token(x_api_token, db)
+    
+    # Fall back to JWT
+    if credentials:
+        return await get_current_user_dependency(credentials, db)
+    
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Authentication required (JWT or API token)",
+        headers={"WWW-Authenticate": "Bearer"}
+    )
