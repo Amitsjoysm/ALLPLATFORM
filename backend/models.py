@@ -123,6 +123,8 @@ class Opportunity(BaseModel):
     user_intent: int  # 1-10
     suggested_action: str
     content_template: Optional[str] = None
+    signal_content: Optional[str] = None
+    signal_link: Optional[str] = None
     status: OpportunityStatus = OpportunityStatus.PENDING
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     meta: Dict[str, Any] = Field(default_factory=dict)
