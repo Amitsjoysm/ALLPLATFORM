@@ -132,7 +132,7 @@ async def login(request: Request, credentials: UserLogin, db: AsyncIOMotorDataba
 
 
 @api_router.get("/auth/me", response_model=UserResponse)
-async def get_me(db: AsyncIOMotorDatabase = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def get_me(current_user: User = Depends(get_current_user_dependency)):
     return UserResponse(**current_user.model_dump())
 
 
