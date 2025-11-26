@@ -308,6 +308,54 @@ backend:
       - working: true
         agent: "main"
         comment: "Updated Groq and Exa API keys with user-provided values. Backend restarted to apply changes."
+  
+  - task: "Smart Keyword Discovery - URL Extraction Service"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/services/url_keyword_extractor.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Created URLKeywordExtractor service with 3 main functions: 1) fetch_url_content() - fetches and parses any URL (website/social media), 2) extract_keywords() - uses Groq AI to extract relevant keywords, industry, niche, business type, 3) analyze_seo() - comprehensive SEO analysis with score, issues, warnings, recommendations. Supports websites, Instagram, LinkedIn, Facebook, Twitter, YouTube. Needs testing."
+  
+  - task: "Smart Keyword Discovery - API Endpoints"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added 3 new API endpoints: 1) POST /api/extract-keywords (rate: 10/hour) - extract keywords from URL, 2) POST /api/analyze-seo (rate: 5/hour) - comprehensive SEO analysis, 3) POST /api/save-extracted-keywords - save extracted keywords to user preferences. All endpoints are JWT-protected. Needs testing."
+  
+  - task: "Smart Keyword Discovery - Models Update"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/models.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Updated UserPreferences model with: 1) extracted_keywords field - stores keywords extracted from URLs, 2) analyzed_urls field - tracks history of analyzed URLs with metadata. Updated UserPreferencesCreate accordingly. Needs testing."
+  
+  - task: "Smart Keyword Discovery - Celery Integration"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/celery_tasks.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Updated create_user_recommendations() to merge extracted_keywords with target_keywords when filtering opportunities. Now both manual keywords and AI-extracted keywords are used for opportunity matching. Needs testing."
 
 frontend:
   - task: "User Dashboard"
