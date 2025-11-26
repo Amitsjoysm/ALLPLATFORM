@@ -54,11 +54,93 @@ DISQUALIFICATION SIGNS:
 
 Respond in JSON format only."""
     
+    async def analyze_post_author(
+        self,
+        post_data: Dict[str, Any],
+        product_profile: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Analyze post author to determine if they're a potential lead
+        
+        Args:
+            post_data: Post content and author info
+            product_profile: User's product profile for context
+        
+        Returns:
+            Lead analysis result or None if not qualified
+        """
+        try:
+            post_content = post_data.get("content", "")
+            author = post_data.get("author", {})
+            author_name = author.get("name", "Unknown")
+            author_url = author.get("url", "")
+            author_headline = author.get("headline", "")
+            
+            if not post_content or len(post_content) < 50:
+                return None
+            
+            # Build product context
+            product_name = product_profile.get("product_name", "our product")
+            product_desc = product_profile.get("product_description", "")
+            target_customer = product_profile.get("target_customer_profile", "")
+            problems_solved = product_profile.get("key_problems_solved", [])
+            buying_signals = product_profile.get("buying_signals", [])
+            
+            # Build analysis prompt
+            user_prompt = f"""
+PRODUCT INFORMATION:
+Name: {product_name}
+Description: {product_desc}
+Target Customers: {target_customer}
+Problems Solved: {', '.join(problems_solved)}
+Buying Signals: {', '.join(buying_signals)}
+
+POST AUTHOR TO ANALYZE:
+Name: {author_name}
+Headline: {author_headline}
+Post Content: {post_content}
+
+Task: Analyze if this post author is expressing a need/problem that {product_name} solves.
+Consider: Are they asking for solutions? Complaining about a problem? Looking for recommendations?
+
+Provide JSON response with lead qualification analysis. Set lead_source to "post_author".
+"""
+            
+            # Call LLM for analysis
+            messages = [
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+            
+            response = await self._call_llm_with_retry(messages)
+            
+            if not response:
+                return None
+            
+            # Parse JSON response
+            result = self._extract_json(response)
+            
+            if result and result.get("lead_qualified", False):
+                # Add original data
+                result["comment_text"] = post_content  # Store post as "comment_text" for consistency
+                result["author_name"] = author_name
+                result["linkedin_url"] = author_url or self._extract_linkedin_url(post_content)
+                result["author_headline"] = author_headline
+                result["lead_source"] = "post_author"
+                
+                return result
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error analyzing post author: {e}")
+            return None
+    
     async def analyze_comment(
         self, 
         comment_data: Dict[str, Any], 
         post_context: Dict[str, Any],
-        user_keywords: List[str]
+        product_profile: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
         """
         Analyze a single comment to determine if it's a qualified lead
@@ -66,22 +148,36 @@ Respond in JSON format only."""
         Args:
             comment_data: Comment text, author info, etc.
             post_context: Context about the post
-            user_keywords: Keywords related to user's product
+            product_profile: User's product profile for context
         
         Returns:
             Lead analysis result or None if not qualified
         """
         try:
             comment_text = comment_data.get("text", "")
-            author_name = comment_data.get("author", {}).get("name", "Unknown")
-            author_url = comment_data.get("author", {}).get("url", "")
+            author = comment_data.get("author", {})
+            author_name = author.get("name", "Unknown")
+            author_url = author.get("url", "")
+            author_headline = author.get("headline", "")
             
             if not comment_text or len(comment_text) < 20:  # Skip very short comments
                 return None
             
+            # Build product context
+            product_name = product_profile.get("product_name", "our product")
+            product_desc = product_profile.get("product_description", "")
+            target_customer = product_profile.get("target_customer_profile", "")
+            problems_solved = product_profile.get("key_problems_solved", [])
+            buying_signals = product_profile.get("buying_signals", [])
+            
             # Build analysis prompt
             user_prompt = f"""
-PRODUCT/SERVICE KEYWORDS: {', '.join(user_keywords)}
+PRODUCT INFORMATION:
+Name: {product_name}
+Description: {product_desc}
+Target Customers: {target_customer}
+Problems Solved: {', '.join(problems_solved)}
+Buying Signals: {', '.join(buying_signals)}
 
 POST CONTEXT:
 Title: {post_context.get('title', 'N/A')}
@@ -89,10 +185,11 @@ Content: {post_context.get('content', '')[:300]}...
 
 COMMENT TO ANALYZE:
 Author: {author_name}
+Headline: {author_headline}
 Comment: {comment_text}
 
-Analyze this comment and determine if this person is a potential lead based on the product keywords.
-Provide a detailed JSON response with lead qualification analysis.
+Task: Analyze if this commenter is expressing interest/need that {product_name} addresses.
+Provide JSON response with lead qualification analysis. Set lead_source to "commenter".
 """
             
             # Call LLM for analysis
@@ -114,6 +211,8 @@ Provide a detailed JSON response with lead qualification analysis.
                 result["comment_text"] = comment_text
                 result["author_name"] = author_name
                 result["linkedin_url"] = author_url or self._extract_linkedin_url(comment_text)
+                result["author_headline"] = author_headline
+                result["lead_source"] = "commenter"
                 
                 return result
             
