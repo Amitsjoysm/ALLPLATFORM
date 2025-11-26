@@ -459,6 +459,204 @@ const Settings = () => {
             }}
           />
 
+          {/* Lead Generation / Product Profile */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">🎯 Lead Generation & Product Profile</h2>
+                <p className="text-gray-600 text-sm mt-1">
+                  Configure your product details to identify qualified leads from LinkedIn posts and comments
+                </p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={formData.enable_lead_identification}
+                  onChange={(e) => setFormData({...formData, enable_lead_identification: e.target.checked})}
+                  className="w-4 h-4 text-blue-600 rounded"
+                />
+                <label className="text-gray-700 text-sm">Enable Lead Identification</label>
+              </div>
+            </div>
+            
+            {formData.enable_lead_identification && (
+              <div className="space-y-4 mt-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Product Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.product_name}
+                    onChange={(e) => setFormData({...formData, product_name: e.target.value})}
+                    placeholder="e.g., EmailVerify Pro"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Product Description <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    value={formData.product_description}
+                    onChange={(e) => setFormData({...formData, product_description: e.target.value})}
+                    placeholder="Brief description of what your product does..."
+                    rows="3"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    This helps the AI understand what your product does
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Target Customer Profile
+                  </label>
+                  <textarea
+                    value={formData.target_customer_profile}
+                    onChange={(e) => setFormData({...formData, target_customer_profile: e.target.value})}
+                    placeholder="e.g., B2B SaaS founders, Marketing teams, Sales professionals"
+                    rows="2"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Who is your ideal customer? (job titles, industries, company size)
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Key Problems Your Product Solves
+                  </label>
+                  <div className="flex space-x-2 mb-2">
+                    <input
+                      type="text"
+                      value={problemInput}
+                      onChange={(e) => setProblemInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && addProblem()}
+                      placeholder="e.g., reduces email bounce rates"
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={addProblem}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.key_problems_solved.map((problem, index) => (
+                      <span key={index} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm flex items-center space-x-1">
+                        <span>{problem}</span>
+                        <button onClick={() => removeProblem(problem)} className="text-green-600 hover:text-green-800">×</button>
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    What pain points or problems does your product address?
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Buying Signals / Intent Keywords
+                  </label>
+                  <div className="flex space-x-2 mb-2">
+                    <input
+                      type="text"
+                      value={signalInput}
+                      onChange={(e) => setSignalInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && addSignal()}
+                      placeholder='e.g., "need email verification", "looking for lead tool"'
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={addSignal}
+                      className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.buying_signals.map((signal, index) => (
+                      <span key={index} className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm flex items-center space-x-1">
+                        <span>{signal}</span>
+                        <button onClick={() => removeSignal(signal)} className="text-orange-600 hover:text-orange-800">×</button>
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Phrases that indicate someone is interested in buying
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Competitive Advantages (Optional)
+                  </label>
+                  <div className="flex space-x-2 mb-2">
+                    <input
+                      type="text"
+                      value={advantageInput}
+                      onChange={(e) => setAdvantageInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && addAdvantage()}
+                      placeholder="e.g., faster processing, lower cost, better accuracy"
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={addAdvantage}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.competitive_advantages.map((advantage, index) => (
+                      <span key={index} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm flex items-center space-x-1">
+                        <span>{advantage}</span>
+                        <button onClick={() => removeAdvantage(advantage)} className="text-purple-600 hover:text-purple-800">×</button>
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    What makes your product unique? (helps in crafting outreach messages)
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Minimum Lead Score: {formData.min_lead_score}
+                  </label>
+                  <input
+                    type="range"
+                    min="20"
+                    max="100"
+                    value={formData.min_lead_score}
+                    onChange={(e) => setFormData({...formData, min_lead_score: parseInt(e.target.value)})}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>More leads (lower quality)</span>
+                    <span>Fewer leads (higher quality)</span>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+                  <h3 className="text-sm font-semibold text-blue-900 mb-2">💡 How Lead Identification Works</h3>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• AI scans LinkedIn posts and comments based on your keywords</li>
+                    <li>• Identifies people expressing problems your product solves</li>
+                    <li>• Extracts LinkedIn profiles and qualification reasons</li>
+                    <li>• Suggests personalized outreach approaches</li>
+                    <li>• View all leads in the <a href="/leads" className="underline font-medium">Leads Dashboard</a></li>
+                  </ul>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Scan Frequency */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4 text-gray-900">⏰ Scan Frequency</h2>
