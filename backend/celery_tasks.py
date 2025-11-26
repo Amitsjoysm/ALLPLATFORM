@@ -137,6 +137,13 @@ async def async_run_hourly_scan():
         
         logger.info("=== Hourly traffic scan completed ===")
         
+        # Trigger lead identification (runs separately)
+        try:
+            logger.info("Triggering LinkedIn lead identification...")
+            identify_linkedin_leads.delay()  # Run asynchronously
+        except Exception as e:
+            logger.error(f"Error triggering lead identification: {e}")
+        
     except Exception as e:
         logger.error(f"Hourly scan error: {e}", exc_info=True)
     finally:
