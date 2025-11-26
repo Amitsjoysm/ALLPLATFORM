@@ -24,6 +24,9 @@ celery_app.conf.update(
     task_soft_time_limit=3000,  # 50 minutes
 )
 
+# Import tasks for autodiscovery
+celery_app.conf.imports = ("celery_tasks",)
+
 # Celery Beat schedule - hourly scraping
 celery_app.conf.beat_schedule = {
     "hourly-traffic-scan": {
