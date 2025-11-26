@@ -152,8 +152,8 @@ class LinkedInPostsRapidAPIScraper(BaseScraper):
                             
                             # Fetch comments for lead identification
                             comments = []
-                            if fetch_comments and post_urn:
-                                comments = await self.fetch_post_comments(post_urn, api_key)
+                            if fetch_comments and post_url:
+                                comments = await self.fetch_post_comments(post_url, api_key)
                                 await asyncio.sleep(1)  # Rate limiting
                             
                             # Store post with comments for lead identification
