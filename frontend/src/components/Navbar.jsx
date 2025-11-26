@@ -3,7 +3,7 @@ import { Button } from './ui/button';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from './ui/dropdown-menu';
 import { getUser, clearAuth, isAdmin } from '../utils/auth';
-import { Target, LogOut, User, LayoutDashboard, Settings } from 'lucide-react';
+import { Target, LogOut, User, LayoutDashboard, Settings, Users } from 'lucide-react';
 
 export const Navbar = () => {
   const navigate = useNavigate();
