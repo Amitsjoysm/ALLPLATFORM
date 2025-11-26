@@ -132,7 +132,7 @@ async def async_run_hourly_scan():
 
 
 async def create_user_recommendations(db, opportunities: list):
-    """Create personalized recommendations for users based on their plan"""
+    """Create personalized recommendations for users based on their preferences"""
     try:
         # Get all active users
         users = await db.users.find({"is_active": True}, {"_id": 0}).to_list(1000)
@@ -141,13 +141,53 @@ async def create_user_recommendations(db, opportunities: list):
             user_id = user["id"]
             plan = user.get("plan", "free")
             
-            # Filter opportunities based on plan
+            # Get user preferences
+            prefs = await db.user_preferences.find_one({"user_id": user_id}, {"_id": 0})
+            
+            # If no preferences, use defaults
+            if not prefs:
+                from models import UserPreferences
+                prefs = UserPreferences(user_id=user_id).model_dump()
+            
+            # Extract preference values
+            min_score = prefs.get("min_opportunity_score", 50.0)
+            enabled_types = prefs.get("enabled_opportunity_types", [])
+            max_daily = prefs.get("max_opportunities_per_day", 50)
+            target_keywords = prefs.get("target_keywords", [])
+            exclude_keywords = prefs.get("exclude_keywords", [])
+            
+            # Filter opportunities based on user preferences
+            filtered_opportunities = []
+            for opp in opportunities:
+                # Check minimum score
+                if opp["score"] < min_score:
+                    continue
+                
+                # Check opportunity type
+                if enabled_types and opp["type"] not in enabled_types:
+                    continue
+                
+                # Check keywords if user has specified them
+                if target_keywords:
+                    content = opp.get("suggested_action", "").lower()
+                    if not any(keyword.lower() in content for keyword in target_keywords):
+                        continue
+                
+                # Check exclude keywords
+                if exclude_keywords:
+                    content = opp.get("suggested_action", "").lower()
+                    if any(keyword.lower() in content for keyword in exclude_keywords):
+                        continue
+                
+                filtered_opportunities.append(opp)
+            
+            # Limit by plan and user preference
             if plan == "free":
-                # Free users get top 5 opportunities per day
-                user_opportunities = sorted(opportunities, key=lambda x: x["score"], reverse=True)[:5]
+                max_count = min(5, max_daily)
             else:
-                # Pro users get top 20
-                user_opportunities = sorted(opportunities, key=lambda x: x["score"], reverse=True)[:20]
+                max_count = min(20, max_daily)
+            
+            user_opportunities = sorted(filtered_opportunities, key=lambda x: x["score"], reverse=True)[:max_count]
             
             # Create recommendations
             recommendations = []
@@ -175,7 +215,7 @@ async def create_user_recommendations(db, opportunities: list):
                 
                 # Insert new recommendations
                 await db.recommendations.insert_many(recommendations)
-                logger.info(f"Created {len(recommendations)} recommendations for user {user_id}")
+                logger.info(f"Created {len(recommendations)} recommendations for user {user_id} (filtered by preferences)")
     
     except Exception as e:
         logger.error(f"Error creating recommendations: {e}")
